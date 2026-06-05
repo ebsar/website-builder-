@@ -41,6 +41,28 @@ const blendModes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighte
 const hoverEffects = ['none', 'lift', 'grow', 'tilt', 'glow', 'blur', 'dim'];
 const clipShapes = ['none', 'circle', 'diamond', 'hexagon', 'ticket', 'slant'];
 const objectFits = ['cover', 'contain', 'fill', 'none', 'scale-down'];
+const textAnimations = [
+  { value: 'none', label: 'None' },
+  { value: 'fade-in', label: 'Fade in' },
+  { value: 'slide-up', label: 'Slide up' },
+  { value: 'slide-down', label: 'Slide down' },
+  { value: 'slide-left', label: 'Slide left' },
+  { value: 'slide-right', label: 'Slide right' },
+  { value: 'typewriter', label: 'Typewriter' },
+  { value: 'typing-cursor', label: 'Typing cursor' },
+  { value: 'wave', label: 'Wave' },
+  { value: 'bounce', label: 'Bounce' },
+  { value: 'pulse', label: 'Pulse' },
+  { value: 'glow', label: 'Glow' },
+  { value: 'neon', label: 'Neon' },
+  { value: 'flicker', label: 'Flicker' },
+  { value: 'shake', label: 'Shake' },
+  { value: 'blur-in', label: 'Blur in' },
+  { value: 'zoom-in', label: 'Zoom in' },
+  { value: 'flip', label: 'Flip' },
+  { value: 'swing', label: 'Swing' },
+  { value: 'gradient-flow', label: 'Gradient flow' }
+];
 
 function uid(prefix = 'id') {
   return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -63,6 +85,10 @@ function textLayer(text, overrides = {}) {
     letterSpacing: 0,
     textTransform: 'none',
     textShadow: 'none',
+    textAnimation: 'none',
+    textAnimationDuration: 1.2,
+    textAnimationDelay: 0,
+    textAnimationLoop: false,
     ...overrides
   };
 }
@@ -171,11 +197,20 @@ function clipPathFor(shape) {
   return shapes[shape] || undefined;
 }
 
+function effectLevel(value) {
+  return Number(value ?? 100) - 100;
+}
+
+function effectValue(level) {
+  return Number(level) + 100;
+}
+
 function historySnapshot(state) {
   return {
     mode: state.mode,
     websiteStyle: state.websiteStyle,
     device: state.device,
+    navbar: state.navbar,
     selectedId: state.selectedId,
     snapToGrid: state.snapToGrid,
     showGrid: state.showGrid,
@@ -296,6 +331,14 @@ function defaultState() {
     mode: 'edit',
     websiteStyle: 'drawn',
     device: 'desktop',
+    navbar: {
+      brand: 'Boost Bite',
+      links: ['Home', 'About', 'Services', 'Blog'],
+      cta: 'Contact Now',
+      height: 108,
+      backgroundColor: '#cfe6fb',
+      sticky: false
+    },
     selectedId: null,
     snapToGrid: true,
     showGrid: true,
@@ -322,6 +365,13 @@ function App() {
   }, [state]);
 
   const selected = state.sections.flatMap(sec => sec.elements.map(el => ({ ...el, sectionId: sec.id }))).find(el => el.id === state.selectedId);
+  const selectedRef = useRef(selected);
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    selectedRef.current = selected;
+    stateRef.current = state;
+  }, [selected, state]);
 
   function commitState(updater) {
     setState(prev => {
@@ -421,6 +471,12 @@ function App() {
     }));
   }
 
+  function deleteSelected() {
+    const current = selectedRef.current;
+    if (!current) return;
+    deleteElement(current.sectionId, current.id);
+  }
+
   function duplicateSelected() {
     if (!selected) return;
     const duplicate = cloneElementData(selected);
@@ -498,6 +554,36 @@ function App() {
       ...prev,
       sections: prev.sections.map(sec => sec.id === sectionId ? { ...sec, ...patch } : sec)
     }));
+  }
+
+  function updateNavbar(patch) {
+    commitState(prev => ({
+      ...prev,
+      navbar: { ...(prev.navbar || defaultState().navbar), ...patch }
+    }));
+  }
+
+  function updateNavbarLink(index, value) {
+    commitState(prev => {
+      const navbar = prev.navbar || defaultState().navbar;
+      const links = [...(navbar.links || [])];
+      links[index] = value;
+      return { ...prev, navbar: { ...navbar, links } };
+    });
+  }
+
+  function addNavbarLink() {
+    commitState(prev => {
+      const navbar = prev.navbar || defaultState().navbar;
+      return { ...prev, navbar: { ...navbar, links: [...(navbar.links || []), 'New Link'] } };
+    });
+  }
+
+  function removeNavbarLink(index) {
+    commitState(prev => {
+      const navbar = prev.navbar || defaultState().navbar;
+      return { ...prev, navbar: { ...navbar, links: (navbar.links || []).filter((_, i) => i !== index) } };
+    });
   }
 
   function duplicateSection(sectionId) {
@@ -588,6 +674,77 @@ function App() {
     setTimeout(() => URL.revokeObjectURL(url), 500);
   }
 
+  useEffect(() => {
+    function isTypingTarget(target) {
+      return target?.closest?.('input, textarea, select, [contenteditable="true"]');
+    }
+
+    function handleShortcut(event) {
+      if (isTypingTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+      const meta = event.ctrlKey || event.metaKey;
+      const current = selectedRef.current;
+
+      if (meta && key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        undo();
+        return;
+      }
+
+      if ((meta && key === 'y') || (meta && event.shiftKey && key === 'z')) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+
+      if (meta && key === 'c') {
+        event.preventDefault();
+        copySelected();
+        return;
+      }
+
+      if (meta && key === 'v') {
+        event.preventDefault();
+        pasteElement();
+        return;
+      }
+
+      if (meta && key === 'd') {
+        event.preventDefault();
+        duplicateSelected();
+        return;
+      }
+
+      if (key === 'delete' || key === 'backspace') {
+        event.preventDefault();
+        deleteSelected();
+        return;
+      }
+
+      if (key === 'p') {
+        event.preventDefault();
+        setUiState(prev => ({ ...prev, mode: prev.mode === 'edit' ? 'preview' : 'edit', selectedId: null }));
+        return;
+      }
+
+      if (current && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+        event.preventDefault();
+        const amount = event.shiftKey ? 10 : 1;
+        const moves = {
+          arrowup: [0, -amount],
+          arrowdown: [0, amount],
+          arrowleft: [-amount, 0],
+          arrowright: [amount, 0]
+        };
+        nudgeSelected(...moves[key]);
+      }
+    }
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, []);
+
   return (
     <>
       <SketchFilters />
@@ -629,7 +786,14 @@ function App() {
       </button>
 
       <div className={`site-style-shell site-style-${state.websiteStyle || 'drawn'} device-${state.device || 'desktop'}`}>
-        <HeaderNav editing={state.mode === 'edit'} />
+        <HeaderNav
+          editing={state.mode === 'edit'}
+          navbar={state.navbar || defaultState().navbar}
+          onUpdate={updateNavbar}
+          onLinkUpdate={updateNavbarLink}
+          onAddLink={addNavbarLink}
+          onRemoveLink={removeNavbarLink}
+        />
 
         <div id="sections-layout-container">
           {state.sections.map(sec => (
@@ -661,6 +825,7 @@ function App() {
           onUpdate={patch => updateElement(selected.sectionId, selected.id, patch)}
           onTextUpdate={(textId, patch) => updateText(selected.sectionId, selected.id, textId, patch)}
           onPreset={presetName => applyPresetSelected(presetName)}
+          onDelete={() => deleteElement(selected.sectionId, selected.id)}
         />
       )}
     </>
@@ -723,122 +888,169 @@ function TopToolbar({
             <small>{websiteStyle === 'modern' ? 'Modern workspace' : 'Drawn workspace'}</small>
           </span>
         </div>
+        <nav className="editor-menubar" aria-label="Editor tools">
+          <details className="editor-menu">
+            <summary>Edit</summary>
+            <div className="editor-menu-panel">
+              <span className="menu-section-title">Shortcuts</span>
+              <div className="shortcut-list">
+                <span>Ctrl Z</span><span>Undo</span>
+                <span>Ctrl Y</span><span>Redo</span>
+                <span>Ctrl C/V</span><span>Copy/Paste</span>
+                <span>Delete</span><span>Remove selected</span>
+                <span>Arrows</span><span>Nudge</span>
+              </div>
+              <span className="menu-section-title">Actions</span>
+              <button className="builder-btn" disabled={!canUndo} onClick={onUndo}>Undo</button>
+              <button className="builder-btn" disabled={!canRedo} onClick={onRedo}>Redo</button>
+              <button className="builder-btn" disabled={!selected} onClick={onCopy}>Copy</button>
+              <button className="builder-btn" disabled={!canPaste} onClick={onPaste}>Paste</button>
+              <button className={`builder-btn ${snapToGrid ? 'active-tool' : ''}`} onClick={onToggleSnap}>Snap</button>
+              <button className={`builder-btn ${showGrid ? 'active-tool' : ''}`} onClick={onToggleGrid}>Grid</button>
+              <label className="grid-size-control">
+                Size
+                <input type="number" min="4" max="80" value={gridSize || 10} onChange={event => onGridSize(event.target.value)} />
+              </label>
+            </div>
+          </details>
+          <details className="editor-menu">
+            <summary>Sections</summary>
+            <div className="editor-menu-panel menu-grid">
+              <button className="builder-btn primary" onClick={() => onTemplate('hero')}>Hero</button>
+              <button className="builder-btn" onClick={() => onTemplate('content')}>Content</button>
+              <button className="builder-btn" onClick={() => onTemplate('gallery')}>Gallery</button>
+              <button className="builder-btn" onClick={() => onTemplate('cta')}>CTA</button>
+              <button className="builder-btn" onClick={() => onTemplate('pricing')}>Pricing</button>
+              <button className="builder-btn" onClick={() => onTemplate('testimonial')}>Reviews</button>
+              <button className="builder-btn" onClick={() => onTemplate('blank')}>Blank</button>
+            </div>
+          </details>
+          <details className="editor-menu">
+            <summary>View</summary>
+            <div className="editor-menu-panel">
+              <span className="menu-section-title">Theme</span>
+              <button className={`builder-btn ${websiteStyle === 'modern' ? 'active-tool' : ''}`} onClick={() => onWebsiteStyle('modern')}>Modern</button>
+              <button className={`builder-btn ${websiteStyle === 'drawn' ? 'active-tool' : ''}`} onClick={() => onWebsiteStyle('drawn')}>Drawn</button>
+              <span className="menu-section-title">Canvas</span>
+              {['desktop', 'tablet', 'mobile'].map(item => (
+                <button
+                  key={item}
+                  className={`builder-btn ${device === item ? 'active-tool' : ''}`}
+                  onClick={() => onDevice(item)}
+                >
+                  {item[0].toUpperCase() + item.slice(1)}
+                </button>
+              ))}
+            </div>
+          </details>
+          {selected && (
+            <details className="editor-menu">
+              <summary>Selected</summary>
+              <div className="editor-menu-panel menu-grid">
+                <button className="builder-btn" onClick={onDuplicate}>Duplicate</button>
+                <button className="builder-btn" onClick={() => onLayer(1)}>Layer +</button>
+                <button className="builder-btn" onClick={() => onLayer(-1)}>Layer -</button>
+                <button className="builder-btn" onClick={() => onAlign('left')}>Left</button>
+                <button className="builder-btn" onClick={() => onAlign('center')}>Center</button>
+                <button className="builder-btn" onClick={() => onAlign('right')}>Right</button>
+                <button className="builder-btn" onClick={() => onNudge(0, -10)}>Up</button>
+                <button className="builder-btn" onClick={() => onNudge(0, 10)}>Down</button>
+                <button className="builder-btn" onClick={onLock}>{selected.locked ? 'Unlock' : 'Lock'}</button>
+                <button className="builder-btn" onClick={() => onPreset('cleanCard')}>Card</button>
+                <button className="builder-btn" onClick={() => onPreset('glass')}>Glass</button>
+                <button className="builder-btn" onClick={() => onPreset('glowButton')}>Glow</button>
+                <button className="builder-btn" onClick={() => onPreset('softImage')}>Image</button>
+                <button className="builder-btn" onClick={() => onPreset('ghost')}>No Border</button>
+              </div>
+            </details>
+          )}
+          <details className="editor-menu">
+            <summary>Publish</summary>
+            <div className="editor-menu-panel">
+              <button className="builder-btn" onClick={onPreview}>{mode === 'edit' ? 'Preview' : 'Edit'}</button>
+              <button className="builder-btn" onClick={onExport}>Export HTML</button>
+              <button className="builder-btn" onClick={onExportJson}>Export JSON</button>
+              <label className="builder-btn file-builder-btn">
+                Import JSON
+                <input type="file" accept="application/json,.json" onChange={onImportJson} />
+              </label>
+              <button className="builder-btn danger-btn" onClick={onClear}>Reset</button>
+            </div>
+          </details>
+        </nav>
         <div className="editor-status">
           <span>{device}</span>
           <span>{snapToGrid ? 'Snap on' : 'Snap off'}</span>
           <span>{showGrid ? `Grid ${gridSize}` : 'Grid hidden'}</span>
         </div>
       </div>
-      <div className="controls-content">
-        <div className="builder-group toolbar-edit-group">
-          <span className="builder-label">Edit</span>
-          <button className="builder-btn" disabled={!canUndo} onClick={onUndo}>Undo</button>
-          <button className="builder-btn" disabled={!canRedo} onClick={onRedo}>Redo</button>
-          <button className="builder-btn" disabled={!selected} onClick={onCopy}>Copy</button>
-          <button className="builder-btn" disabled={!canPaste} onClick={onPaste}>Paste</button>
-          <button className={`builder-btn ${snapToGrid ? 'active-tool' : ''}`} onClick={onToggleSnap}>Snap</button>
-          <button className={`builder-btn ${showGrid ? 'active-tool' : ''}`} onClick={onToggleGrid}>Grid</button>
-          <label className="grid-size-control">
-            Size
-            <input type="number" min="4" max="80" value={gridSize || 10} onChange={event => onGridSize(event.target.value)} />
-          </label>
-        </div>
-        <div className="builder-group">
-          <span className="builder-label">Sections</span>
-          <button className="builder-btn primary" onClick={() => onTemplate('hero')}>Hero</button>
-          <button className="builder-btn" onClick={() => onTemplate('content')}>Content</button>
-          <button className="builder-btn" onClick={() => onTemplate('gallery')}>Gallery</button>
-          <button className="builder-btn" onClick={() => onTemplate('cta')}>CTA</button>
-          <button className="builder-btn" onClick={() => onTemplate('pricing')}>Pricing</button>
-          <button className="builder-btn" onClick={() => onTemplate('testimonial')}>Reviews</button>
-          <button className="builder-btn" onClick={() => onTemplate('blank')}>Blank</button>
-        </div>
-        <div className="builder-group view-builder">
-          <span className="builder-label">Theme</span>
-          <button
-            className={`builder-btn ${websiteStyle === 'modern' ? 'active-tool' : ''}`}
-            onClick={() => onWebsiteStyle('modern')}
-          >
-            Modern
-          </button>
-          <button
-            className={`builder-btn ${websiteStyle === 'drawn' ? 'active-tool' : ''}`}
-            onClick={() => onWebsiteStyle('drawn')}
-          >
-            Drawn
-          </button>
-        </div>
-        <div className="builder-group device-builder">
-          <span className="builder-label">Canvas</span>
-          {['desktop', 'tablet', 'mobile'].map(item => (
-            <button
-              key={item}
-              className={`builder-btn ${device === item ? 'active-tool' : ''}`}
-              onClick={() => onDevice(item)}
-            >
-              {item[0].toUpperCase() + item.slice(1)}
-            </button>
-          ))}
-        </div>
-        {selected && (
-          <div className="builder-group edit-builder">
-            <span className="builder-label">Selected</span>
-            <button className="builder-btn" onClick={onDuplicate}>Duplicate</button>
-            <button className="builder-btn" onClick={() => onLayer(1)}>Layer +</button>
-            <button className="builder-btn" onClick={() => onLayer(-1)}>Layer -</button>
-            <button className="builder-btn" onClick={() => onAlign('left')}>Left</button>
-            <button className="builder-btn" onClick={() => onAlign('center')}>Center</button>
-            <button className="builder-btn" onClick={() => onAlign('right')}>Right</button>
-            <button className="builder-btn nudge-btn" onClick={() => onNudge(0, -10)}>Up</button>
-            <button className="builder-btn nudge-btn" onClick={() => onNudge(0, 10)}>Down</button>
-            <button className="builder-btn" onClick={onLock}>{selected.locked ? 'Unlock' : 'Lock'}</button>
-          </div>
-        )}
-        {selected && (
-          <div className="builder-group style-builder">
-            <span className="builder-label">Style</span>
-            <button className="builder-btn" onClick={() => onPreset('cleanCard')}>Card</button>
-            <button className="builder-btn" onClick={() => onPreset('glass')}>Glass</button>
-            <button className="builder-btn" onClick={() => onPreset('glowButton')}>Glow</button>
-            <button className="builder-btn" onClick={() => onPreset('softImage')}>Image</button>
-            <button className="builder-btn" onClick={() => onPreset('ghost')}>No Border</button>
-          </div>
-        )}
-        <div className="builder-group publish-builder">
-          <span className="builder-label">Publish</span>
-          <button className="builder-btn" onClick={onPreview}>{mode === 'edit' ? 'Preview' : 'Edit'}</button>
-          <button className="builder-btn" onClick={onExport}>Export HTML</button>
-          <button className="builder-btn" onClick={onExportJson}>Export JSON</button>
-          <label className="builder-btn file-builder-btn">
-            Import JSON
-            <input type="file" accept="application/json,.json" onChange={onImportJson} />
-          </label>
-          <button className="builder-btn" onClick={onClear}>Reset</button>
-        </div>
-      </div>
     </div>
   );
 }
 
-function HeaderNav({ editing }) {
+function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemoveLink }) {
+  const navStyle = {
+    minHeight: `${navbar.height || 108}px`,
+    backgroundColor: navbar.backgroundColor || undefined,
+    position: navbar.sticky ? 'sticky' : 'relative',
+    top: navbar.sticky ? 54 : undefined,
+    zIndex: navbar.sticky ? 1200 : undefined
+  };
+
   return (
-    <header className={`header ${editing ? 'drawing-mode' : ''}`} id="header-container">
+    <header className={`header ${editing ? 'drawing-mode' : ''}`} id="header-container" style={navStyle}>
+      {editing && (
+        <details className="navbar-editor-tools compact-editor-menu">
+          <summary>Navbar</summary>
+          <div className="compact-editor-panel">
+            <label>
+              Brand
+              <input value={navbar.brand || ''} onChange={event => onUpdate({ brand: event.target.value })} />
+            </label>
+            <label>
+              CTA
+              <input value={navbar.cta || ''} onChange={event => onUpdate({ cta: event.target.value })} />
+            </label>
+            <label>
+              H
+              <input type="number" min="64" max="220" value={navbar.height || 108} onChange={event => onUpdate({ height: Number(event.target.value) })} />
+            </label>
+            <label>
+              BG
+              <input type="color" value={colorInputValue(navbar.backgroundColor, '#cfe6fb')} onChange={event => onUpdate({ backgroundColor: event.target.value })} />
+            </label>
+            <label className="navbar-check">
+              Sticky
+              <input type="checkbox" checked={!!navbar.sticky} onChange={event => onUpdate({ sticky: event.target.checked })} />
+            </label>
+            <button className="tool-btn" onClick={onAddLink}>Add Link</button>
+          </div>
+        </details>
+      )}
       <nav className="navbar" id="main-navbar">
         <a href="#" className="logo" id="nav-logo">
           <svg className="pen-icon" viewBox="0 0 100 100" width="36" height="36">
             <path d="M 22 78 Q 23 72 26 68 Q 24 66 22 64 Q 18 67 15 70 Z" fill="#111" stroke="#111" strokeWidth="2" />
             <path d="M 26 68 L 68 26 C 71 23 75 27 72 30 L 30 72 Z" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="logo-text">Boost Bite</span>
+          <span className="logo-text">{navbar.brand || 'Boost Bite'}</span>
         </a>
         <div className="nav-menu">
-          <a href="#" className="nav-link"><span>Home</span></a>
-          <a href="#" className="nav-link"><span>About</span></a>
-          <a href="#" className="nav-link"><span>Services</span></a>
-          <a href="#" className="nav-link"><span>Blog</span></a>
+          {(navbar.links || []).map((link, index) => (
+            <span className="nav-link nav-link-editable" key={`${link}_${index}`}>
+              {editing ? (
+                <>
+                  <input value={link} onChange={event => onLinkUpdate(index, event.target.value)} aria-label={`Navbar link ${index + 1}`} />
+                  <button onClick={() => onRemoveLink(index)} aria-label={`Remove ${link}`}>x</button>
+                </>
+              ) : (
+                <span>{link}</span>
+              )}
+            </span>
+          ))}
         </div>
         <div className="nav-actions">
-          <a href="#" className="contact-btn"><span>Contact Now</span></a>
+          <a href="#" className="contact-btn"><span>{navbar.cta || 'Contact Now'}</span></a>
         </div>
       </nav>
     </header>
@@ -909,82 +1121,92 @@ function EditorSection({
     <main className={`workspace ${editing ? 'drawing-mode' : ''}`} style={sectionStyle} onMouseDown={() => editing && onSelect(null)}>
       <div className="section-label">{section.name}</div>
       {editing && (
-        <div className="container-tools">
-          <span className="section-toolbar-title">{section.name} builder</span>
-          <input
-            className="section-name-input"
-            value={section.name}
-            onMouseDown={event => event.stopPropagation()}
-            onChange={event => onUpdateSection(section.id, { name: event.target.value })}
-            aria-label="Section name"
-          />
-          <label className="section-mini-control">
-            H
-            <input
-              type="number"
-              min="260"
-              max="1400"
-              value={section.height || 620}
-              onMouseDown={event => event.stopPropagation()}
-              onChange={event => onUpdateSection(section.id, { height: Number(event.target.value) })}
-            />
-          </label>
-          <label className="section-color-control">
-            BG
-            <input
-              type="color"
-              value={colorInputValue(section.backgroundColor, '#fbf8f1')}
-              onMouseDown={event => event.stopPropagation()}
-              onChange={event => onUpdateSection(section.id, { backgroundColor: event.target.value })}
-            />
-          </label>
-          <label className="section-mini-control">
-            Parallax
-            <input
-              type="checkbox"
-              checked={!!section.parallax}
-              onMouseDown={event => event.stopPropagation()}
-              onChange={event => onUpdateSection(section.id, { parallax: event.target.checked })}
-            />
-          </label>
-          <select
-            className="section-select-control"
-            value={section.backgroundGradient || ''}
-            onMouseDown={event => event.stopPropagation()}
-            onChange={event => onUpdateSection(section.id, { backgroundGradient: event.target.value })}
-            aria-label="Section gradient"
-          >
-            <option value="">No gradient</option>
-            <option value="linear-gradient(135deg, #ffffff, #eff6ff)">Soft blue</option>
-            <option value="linear-gradient(135deg, #ffffff, #f8fafc 45%, #e0f2fe)">Clean sky</option>
-            <option value="linear-gradient(135deg, #111827, #1d4ed8)">Dark premium</option>
-            <option value="radial-gradient(circle at 20% 20%, #dbeafe, #ffffff 45%, #f8fafc)">Radial light</option>
-          </select>
-          <div className="component-library" aria-label="Component library">
-            {componentGroups.map(group => (
-              <div className="component-group" key={group.label}>
-                <span className="component-group-label">{group.label}</span>
-                <div className="component-buttons">
-                  {group.items.map(item => (
-                    <button
-                      key={item.type}
-                      className="tool-btn component-btn"
-                      onClick={() => onAddElement(section.id, item.type)}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+        <div className="container-tools compact-section-tools">
+          <span className="section-toolbar-title">{section.name}</span>
+          <details className="compact-editor-menu">
+            <summary>Add</summary>
+            <div className="compact-editor-panel component-library" aria-label="Component library">
+              {componentGroups.map(group => (
+                <div className="component-group" key={group.label}>
+                  <span className="component-group-label">{group.label}</span>
+                  <div className="component-buttons">
+                    {group.items.map(item => (
+                      <button
+                        key={item.type}
+                        className="tool-btn component-btn"
+                        onClick={() => onAddElement(section.id, item.type)}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              ))}
+            </div>
+          </details>
+          <details className="compact-editor-menu">
+            <summary>Section</summary>
+            <div className="compact-editor-panel section-settings-panel">
+              <label>
+                Name
+                <input
+                  className="section-name-input"
+                  value={section.name}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { name: event.target.value })}
+                  aria-label="Section name"
+                />
+              </label>
+              <label>
+                Height
+                <input
+                  type="number"
+                  min="260"
+                  max="1400"
+                  value={section.height || 620}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { height: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Background
+                <input
+                  type="color"
+                  value={colorInputValue(section.backgroundColor, '#fbf8f1')}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { backgroundColor: event.target.value })}
+                />
+              </label>
+              <label>
+                Parallax
+                <input
+                  type="checkbox"
+                  checked={!!section.parallax}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { parallax: event.target.checked })}
+                />
+              </label>
+              <select
+                className="section-select-control"
+                value={section.backgroundGradient || ''}
+                onMouseDown={event => event.stopPropagation()}
+                onChange={event => onUpdateSection(section.id, { backgroundGradient: event.target.value })}
+                aria-label="Section gradient"
+              >
+                <option value="">No gradient</option>
+                <option value="linear-gradient(135deg, #ffffff, #eff6ff)">Soft blue</option>
+                <option value="linear-gradient(135deg, #ffffff, #f8fafc 45%, #e0f2fe)">Clean sky</option>
+                <option value="linear-gradient(135deg, #111827, #1d4ed8)">Dark premium</option>
+                <option value="radial-gradient(circle at 20% 20%, #dbeafe, #ffffff 45%, #f8fafc)">Radial light</option>
+              </select>
+              <div className="section-action-group">
+                <button className="tool-btn" onClick={() => onDuplicateSection(section.id)}>Duplicate</button>
+                <button className="tool-btn" onClick={() => onMoveSection(section.id, -1)}>Move Up</button>
+                <button className="tool-btn" onClick={() => onMoveSection(section.id, 1)}>Move Down</button>
+                <button className="tool-btn btn-delete-section" onClick={() => onDeleteSection(section.id)}>Delete</button>
               </div>
-            ))}
-          </div>
-          <div className="section-action-group">
-            <span className="component-group-label">Section</span>
-            <button className="tool-btn" onClick={() => onDuplicateSection(section.id)}>Duplicate</button>
-            <button className="tool-btn" onClick={() => onMoveSection(section.id, -1)}>Move Up</button>
-            <button className="tool-btn" onClick={() => onMoveSection(section.id, 1)}>Move Down</button>
-            <button className="tool-btn btn-delete-section" onClick={() => onDeleteSection(section.id)}>Delete</button>
-          </div>
+            </div>
+          </details>
         </div>
       )}
       {section.elements.map(item => (
@@ -1115,7 +1337,7 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
       {item.textLayers.map(txt => (
         <div
           key={txt.id}
-          className="element-text-content"
+          className={`element-text-content text-anim-${txt.textAnimation || 'none'} ${txt.textAnimationLoop ? 'text-anim-loop' : ''}`}
           contentEditable={editing && !item.locked}
           suppressContentEditableWarning
           style={{
@@ -1131,7 +1353,9 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
             lineHeight: txt.lineHeight || 1.15,
             letterSpacing: `${txt.letterSpacing || 0}px`,
             textTransform: txt.textTransform || 'none',
-            textShadow: txt.textShadow || 'none'
+            textShadow: txt.textShadow || 'none',
+            animationDuration: `${txt.textAnimationDuration || 1.2}s`,
+            animationDelay: `${txt.textAnimationDelay || 0}s`
           }}
           onBlur={event => onTextUpdate(sectionId, item.id, txt.id, { text: event.currentTarget.textContent })}
         >
@@ -1140,7 +1364,17 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
       ))}
       {editing && selected && !item.locked && (
         <>
-          <button className="element-delete-btn" onClick={event => { event.stopPropagation(); onDelete(sectionId, item.id); }}>Delete</button>
+          <button
+            className="element-delete-btn"
+            onMouseDown={event => event.stopPropagation()}
+            onClick={event => {
+              event.preventDefault();
+              event.stopPropagation();
+              onDelete(sectionId, item.id);
+            }}
+          >
+            Delete
+          </button>
           <span className="rotate-handle" onMouseDown={startRotate} />
           <span className="resize-handle" onMouseDown={startResize} />
         </>
@@ -1149,7 +1383,7 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
   );
 }
 
-function Inspector({ selected, onUpdate, onTextUpdate, onPreset }) {
+function Inspector({ selected, onUpdate, onTextUpdate, onPreset, onDelete }) {
   const firstText = selected.textLayers[0];
 
   function uploadImage(event) {
@@ -1162,6 +1396,11 @@ function Inspector({ selected, onUpdate, onTextUpdate, onPreset }) {
 
   return (
     <aside className="react-inspector">
+      <datalist id="level-scale">
+        <option value="-100" label="-100" />
+        <option value="0" label="0" />
+        <option value="100" label="+100" />
+      </datalist>
       <div className="inspector-title">Edit selected</div>
       <div className="inspector-actions preset-actions">
         <button onClick={() => onPreset('cleanCard')}>Card</button>
@@ -1169,6 +1408,7 @@ function Inspector({ selected, onUpdate, onTextUpdate, onPreset }) {
         <button onClick={() => onPreset('glowButton')}>Glow</button>
         <button onClick={() => onPreset('ghost')}>Clear</button>
       </div>
+      <button className="inspector-delete-btn" onClick={onDelete}>Delete Selected</button>
       <div className="inspector-grid">
         <label>X <input type="number" value={Math.round(selected.left)} onChange={e => onUpdate({ left: Number(e.target.value) })} /></label>
         <label>Y <input type="number" value={Math.round(selected.top)} onChange={e => onUpdate({ top: Number(e.target.value) })} /></label>
@@ -1176,20 +1416,20 @@ function Inspector({ selected, onUpdate, onTextUpdate, onPreset }) {
       <label>Width <input type="number" value={selected.width} onChange={e => onUpdate({ width: Number(e.target.value) })} /></label>
       <label>Height <input type="number" value={selected.height} onChange={e => onUpdate({ height: Number(e.target.value) })} /></label>
       <div className="inspector-title">3D transform</div>
-      <label>Rotate <input type="range" min="-180" max="180" value={selected.rotation || 0} onChange={e => onUpdate({ rotation: Number(e.target.value) })} /></label>
+      <label>Rotate level <input type="range" min="-100" max="100" list="level-scale" value={selected.rotation || 0} onChange={e => onUpdate({ rotation: Number(e.target.value) })} /></label>
       <div className="inspector-grid">
-        <label>Rotate X <input type="number" min="-180" max="180" value={selected.rotateX || 0} onChange={e => onUpdate({ rotateX: Number(e.target.value) })} /></label>
-        <label>Rotate Y <input type="number" min="-180" max="180" value={selected.rotateY || 0} onChange={e => onUpdate({ rotateY: Number(e.target.value) })} /></label>
+        <label>Rotate X <input type="number" min="-100" max="100" value={selected.rotateX || 0} onChange={e => onUpdate({ rotateX: Number(e.target.value) })} /></label>
+        <label>Rotate Y <input type="number" min="-100" max="100" value={selected.rotateY || 0} onChange={e => onUpdate({ rotateY: Number(e.target.value) })} /></label>
       </div>
       <div className="inspector-grid">
-        <label>Z depth <input type="number" min="-500" max="500" value={selected.translateZ || 0} onChange={e => onUpdate({ translateZ: Number(e.target.value) })} /></label>
+        <label>Z depth <input type="number" min="-100" max="100" value={selected.translateZ || 0} onChange={e => onUpdate({ translateZ: Number(e.target.value) })} /></label>
         <label>Perspective <input type="number" min="120" max="3000" value={selected.perspective || 900} onChange={e => onUpdate({ perspective: Number(e.target.value) })} /></label>
       </div>
       <div className="inspector-grid">
         <label>Scale <input type="number" min="0.2" max="3" step="0.05" value={selected.scale || 1} onChange={e => onUpdate({ scale: Number(e.target.value) })} /></label>
-        <label>Skew X <input type="number" min="-60" max="60" value={selected.skewX || 0} onChange={e => onUpdate({ skewX: Number(e.target.value) })} /></label>
+        <label>Skew X <input type="number" min="-100" max="100" value={selected.skewX || 0} onChange={e => onUpdate({ skewX: Number(e.target.value) })} /></label>
       </div>
-      <label>Skew Y <input type="range" min="-60" max="60" value={selected.skewY || 0} onChange={e => onUpdate({ skewY: Number(e.target.value) })} /></label>
+      <label>Skew Y level <input type="range" min="-100" max="100" list="level-scale" value={selected.skewY || 0} onChange={e => onUpdate({ skewY: Number(e.target.value) })} /></label>
       <div className="inspector-actions">
         <button onClick={() => onUpdate({ rotateX: 0, rotateY: 0, translateZ: 0, perspective: 900, scale: 1, skewX: 0, skewY: 0 })}>Reset 3D</button>
         <button onClick={() => onUpdate({ rotateX: 8, rotateY: -12, perspective: 700, translateZ: 18, shadow: '2xl' })}>3D Card</button>
@@ -1202,9 +1442,9 @@ function Inspector({ selected, onUpdate, onTextUpdate, onPreset }) {
       <div className="inspector-title">Tailwind-style effects</div>
       <label>Blur <input type="range" min="0" max="64" value={selected.blur || 0} onChange={e => onUpdate({ blur: Number(e.target.value) })} /></label>
       <label>Backdrop blur <input type="range" min="0" max="64" value={selected.backdropBlur || 0} onChange={e => onUpdate({ backdropBlur: Number(e.target.value) })} /></label>
-      <label>Brightness <input type="range" min="0" max="200" value={selected.brightness || 100} onChange={e => onUpdate({ brightness: Number(e.target.value) })} /></label>
-      <label>Contrast <input type="range" min="0" max="200" value={selected.contrast || 100} onChange={e => onUpdate({ contrast: Number(e.target.value) })} /></label>
-      <label>Saturation <input type="range" min="0" max="200" value={selected.saturate || 100} onChange={e => onUpdate({ saturate: Number(e.target.value) })} /></label>
+      <label>Brightness level <input type="range" min="-100" max="100" list="level-scale" value={effectLevel(selected.brightness)} onChange={e => onUpdate({ brightness: effectValue(e.target.value) })} /></label>
+      <label>Contrast level <input type="range" min="-100" max="100" list="level-scale" value={effectLevel(selected.contrast)} onChange={e => onUpdate({ contrast: effectValue(e.target.value) })} /></label>
+      <label>Saturation level <input type="range" min="-100" max="100" list="level-scale" value={effectLevel(selected.saturate)} onChange={e => onUpdate({ saturate: effectValue(e.target.value) })} /></label>
       <label>Grayscale <input type="range" min="0" max="100" value={selected.grayscale || 0} onChange={e => onUpdate({ grayscale: Number(e.target.value) })} /></label>
       <label>Hue rotate <input type="range" min="0" max="360" value={selected.hueRotate || 0} onChange={e => onUpdate({ hueRotate: Number(e.target.value) })} /></label>
       <label>Invert <input type="range" min="0" max="100" value={selected.invert || 0} onChange={e => onUpdate({ invert: Number(e.target.value) })} /></label>
@@ -1324,6 +1564,17 @@ function Inspector({ selected, onUpdate, onTextUpdate, onPreset }) {
               <option value="0 0 14px rgba(0,123,255,.65)">glow</option>
             </select>
           </label>
+          <div className="inspector-title">Text animation</div>
+          <label>Animation
+            <select value={firstText.textAnimation || 'none'} onChange={e => onTextUpdate(firstText.id, { textAnimation: e.target.value })}>
+              {textAnimations.map(animation => <option key={animation.value} value={animation.value}>{animation.label}</option>)}
+            </select>
+          </label>
+          <div className="inspector-grid">
+            <label>Duration <input type="number" min="0.1" max="12" step="0.1" value={firstText.textAnimationDuration || 1.2} onChange={e => onTextUpdate(firstText.id, { textAnimationDuration: Number(e.target.value) })} /></label>
+            <label>Delay <input type="number" min="0" max="12" step="0.1" value={firstText.textAnimationDelay || 0} onChange={e => onTextUpdate(firstText.id, { textAnimationDelay: Number(e.target.value) })} /></label>
+          </div>
+          <label><input type="checkbox" checked={!!firstText.textAnimationLoop} onChange={e => onTextUpdate(firstText.id, { textAnimationLoop: e.target.checked })} /> Loop animation</label>
         </>
       )}
     </aside>
