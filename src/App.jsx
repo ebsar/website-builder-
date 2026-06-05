@@ -161,6 +161,20 @@ function section(name, elements = []) {
     id: uid('sec'),
     name,
     height: 620,
+    widthMode: 'contained',
+    maxWidth: 1180,
+    paddingX: 20,
+    paddingY: 0,
+    marginY: 28,
+    rotation: 0,
+    radius: 24,
+    borderWidth: 1,
+    borderColor: '#ffffff',
+    shadow: 'xl',
+    opacity: 1,
+    blur: 0,
+    backdropBlur: 18,
+    overflow: 'hidden',
     backgroundColor: 'transparent',
     backgroundImage: '',
     backgroundGradient: '',
@@ -341,28 +355,35 @@ const templateSections = {
   blank: () => section('blank section')
 };
 
+function freshNavbar(overrides = {}) {
+  return {
+    enabled: false,
+    variant: 'fresh',
+    brand: 'Your Brand',
+    logoType: 'text',
+    logoImage: '',
+    logoX: 42,
+    logoY: 22,
+    links: ['Home', 'Work', 'Pricing', 'Contact'],
+    linksX: 360,
+    linksY: 26,
+    cta: 'Get Started',
+    ctaX: 980,
+    ctaY: 18,
+    height: 82,
+    backgroundColor: '#ffffff',
+    rotation: 0,
+    sticky: false,
+    ...overrides
+  };
+}
+
 function defaultState() {
   return {
     mode: 'edit',
     websiteStyle: 'drawn',
     device: 'desktop',
-    navbar: {
-      enabled: false,
-      brand: 'Boost Build',
-      logoType: 'text',
-      logoImage: '',
-      logoX: 72,
-      logoY: 36,
-      links: ['Home', 'About', 'Services', 'Blog'],
-      linksX: 390,
-      linksY: 42,
-      cta: 'Contact Now',
-      ctaX: 970,
-      ctaY: 36,
-      height: 108,
-      backgroundColor: '#cfe6fb',
-      sticky: false
-    },
+    navbar: freshNavbar(),
     selectedId: null,
     drawMode: false,
     drawingData: '',
@@ -385,8 +406,23 @@ function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return defaultState();
       const parsed = JSON.parse(saved);
-      if (parsed.navbar?.brand === 'Boost Bite') {
-        parsed.navbar = { ...parsed.navbar, brand: 'Boost Build' };
+      if (parsed.navbar && !parsed.navbar.variant) {
+        const wasOldBoostNav = ['Boost Bite', 'Boost Build'].includes(parsed.navbar.brand);
+        parsed.navbar = freshNavbar({
+          ...parsed.navbar,
+          variant: 'fresh',
+          brand: wasOldBoostNav ? 'Your Brand' : parsed.navbar.brand || 'Your Brand',
+          links: wasOldBoostNav ? ['Home', 'Work', 'Pricing', 'Contact'] : parsed.navbar.links,
+          cta: wasOldBoostNav ? 'Get Started' : parsed.navbar.cta || 'Get Started',
+          height: Number(parsed.navbar.height) > 96 ? 82 : parsed.navbar.height || 82,
+          backgroundColor: parsed.navbar.backgroundColor === '#cfe6fb' ? '#ffffff' : parsed.navbar.backgroundColor || '#ffffff',
+          logoX: wasOldBoostNav ? 42 : parsed.navbar.logoX,
+          logoY: wasOldBoostNav ? 22 : parsed.navbar.logoY,
+          linksX: wasOldBoostNav ? 360 : parsed.navbar.linksX,
+          linksY: wasOldBoostNav ? 26 : parsed.navbar.linksY,
+          ctaX: wasOldBoostNav ? 980 : parsed.navbar.ctaX,
+          ctaY: wasOldBoostNav ? 18 : parsed.navbar.ctaY
+        });
       }
       if (parsed.navbar && typeof parsed.navbar.enabled === 'undefined') {
         parsed.navbar = { ...parsed.navbar, enabled: false };
@@ -603,7 +639,14 @@ function App() {
   function updateNavbar(patch) {
     commitState(prev => ({
       ...prev,
-      navbar: { ...(prev.navbar || defaultState().navbar), ...patch }
+      navbar: { ...freshNavbar(), ...(prev.navbar || {}), ...patch }
+    }));
+  }
+
+  function addFreshNavbar() {
+    commitState(prev => ({
+      ...prev,
+      navbar: freshNavbar({ enabled: true })
     }));
   }
 
@@ -845,7 +888,7 @@ function App() {
         gridSize={state.gridSize}
         onTemplate={addSection}
         navbarEnabled={!!state.navbar?.enabled}
-        onAddNavbar={() => updateNavbar({ enabled: true })}
+        onAddNavbar={addFreshNavbar}
         onPreview={() => setUiState(prev => ({ ...prev, mode: prev.mode === 'edit' ? 'preview' : 'edit', selectedId: null }))}
         onExport={exportHtml}
         onExportJson={exportJson}
@@ -1204,7 +1247,9 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
     backgroundColor: navbar.backgroundColor || undefined,
     position: navbar.sticky ? 'sticky' : 'relative',
     top: navbar.sticky ? 54 : undefined,
-    zIndex: navbar.sticky ? 1200 : undefined
+    zIndex: navbar.sticky ? 1200 : undefined,
+    transform: `rotate(${navbar.rotation || 0}deg)`,
+    transformOrigin: 'center'
   };
 
   function uploadLogo(event) {
@@ -1252,8 +1297,27 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
     window.addEventListener('mouseup', done);
   }
 
+  function startNavbarRotate(event) {
+    if (!editing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = headerRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    function move(e) {
+      const degrees = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90;
+      onUpdate({ rotation: Math.round(degrees) });
+    }
+    function done() {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', done);
+    }
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', done);
+  }
+
   return (
-    <header ref={headerRef} className={`header ${editing ? 'drawing-mode' : ''}`} id="header-container" style={navStyle}>
+    <header ref={headerRef} className={`header nav-${navbar.variant || 'fresh'} ${editing ? 'drawing-mode' : ''}`} id="header-container" style={navStyle}>
       {editing && guide && (
         <>
           {guide.vertical && <span className="nav-guide nav-guide-v">Center X</span>}
@@ -1301,10 +1365,13 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
               <input type="checkbox" checked={!!navbar.sticky} onChange={event => onUpdate({ sticky: event.target.checked })} />
             </label>
             <button className="tool-btn" onClick={onAddLink}>Add Link</button>
+            <button className="tool-btn" onMouseDown={startNavbarRotate}>Hold Rotate</button>
+            <button className="tool-btn" onClick={() => onUpdate({ rotation: 0 })}>Reset Rotate</button>
             <button className="tool-btn btn-delete-section" onClick={() => onUpdate({ enabled: false })}>Remove Navbar</button>
           </div>
         </details>
       )}
+      {editing && <span className="section-rotate-handle navbar-rotate-handle" title="Hold and drag to rotate navbar" onMouseDown={startNavbarRotate} />}
       <nav className="navbar" id="main-navbar">
         <a
           href="#"
@@ -1315,6 +1382,11 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
         >
           {navbar.logoType === 'image' && navbar.logoImage ? (
             <img className="navbar-logo-image" src={navbar.logoImage} alt={navbar.brand || 'Boost Build'} />
+          ) : (navbar.variant || 'fresh') === 'fresh' ? (
+            <>
+              <span className="fresh-logo-mark">{(navbar.brand || 'Y').trim().slice(0, 1).toUpperCase()}</span>
+              <span className="logo-text">{navbar.brand || 'Your Brand'}</span>
+            </>
           ) : (
             <>
               <svg className="pen-icon" viewBox="0 0 100 100" width="36" height="36">
@@ -1400,14 +1472,86 @@ function EditorSection({
   showGrid,
   gridSize
 }) {
+  const sectionRef = useRef(null);
+
+  function uploadSectionImage(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onUpdateSection(section.id, { backgroundImage: reader.result });
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  }
+
+  function startSectionResize(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = sectionRef.current.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startWidth = section.maxWidth || Math.round(rect.width);
+    const startHeight = section.height || Math.round(rect.height);
+    function move(e) {
+      onUpdateSection(section.id, {
+        widthMode: 'contained',
+        maxWidth: Math.max(320, Math.round(startWidth + e.clientX - startX)),
+        height: Math.max(260, Math.round(startHeight + e.clientY - startY))
+      });
+    }
+    function done() {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', done);
+    }
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', done);
+  }
+
+  function startSectionRotate(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = sectionRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    function move(e) {
+      const degrees = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90;
+      onUpdateSection(section.id, { rotation: Math.round(degrees) });
+    }
+    function done() {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', done);
+    }
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', done);
+  }
+
+  const sectionWidth = section.widthMode === 'full'
+    ? '100%'
+    : `min(${section.maxWidth || 1180}px, calc(100vw - ${(section.paddingX ?? 20) * 2}px))`;
   const sectionStyle = {
+    width: sectionWidth,
+    margin: `${section.marginY ?? 28}px auto`,
+    boxSizing: 'border-box',
+    transform: `rotate(${section.rotation || 0}deg)`,
+    transformOrigin: 'center',
     minHeight: `${section.height || 620}px`,
+    paddingTop: `${section.paddingY || 0}px`,
+    paddingBottom: `${section.paddingY || 0}px`,
+    borderRadius: `${section.radius ?? 24}px`,
+    borderWidth: `${section.borderWidth ?? 1}px`,
+    borderColor: section.borderColor || undefined,
+    borderStyle: (section.borderWidth ?? 1) > 0 ? 'solid' : 'none',
+    boxShadow: shadows[section.shadow || 'xl'] || shadows.xl,
+    opacity: section.opacity ?? 1,
+    filter: `blur(${section.blur || 0}px)`,
+    backdropFilter: `blur(${section.backdropBlur ?? 18}px) saturate(145%)`,
+    WebkitBackdropFilter: `blur(${section.backdropBlur ?? 18}px) saturate(145%)`,
+    overflow: section.overflow || 'hidden',
     backgroundColor: section.backgroundColor || undefined,
     backgroundImage: editing && showGrid
       ? `${section.backgroundGradient ? `${section.backgroundGradient}, ` : ''}linear-gradient(rgba(0,123,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0,123,255,.12) 1px, transparent 1px)${section.backgroundImage ? `, url(${section.backgroundImage})` : ''}`
       : section.backgroundGradient || (section.backgroundImage ? `url(${section.backgroundImage})` : undefined),
     backgroundSize: editing && showGrid
-      ? `${section.backgroundGradient ? 'cover, ' : ''}var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size)${section.backgroundImage ? ', cover' : ''}`
+      ? `${section.backgroundGradient ? 'cover, ' : ''}var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size)${section.backgroundImage ? `, ${section.backgroundSize || 'cover'}` : ''}`
       : section.backgroundSize || 'cover',
     backgroundPosition: section.backgroundPosition || 'center',
     backgroundRepeat: section.backgroundRepeat || 'no-repeat',
@@ -1416,7 +1560,7 @@ function EditorSection({
   };
 
   return (
-    <main className={`workspace ${editing ? 'drawing-mode' : ''}`} style={sectionStyle} onMouseDown={() => editing && onSelect(null)}>
+    <main ref={sectionRef} className={`workspace ${editing ? 'drawing-mode' : ''}`} style={sectionStyle} onMouseDown={() => editing && onSelect(null)}>
       <div className="section-label">{section.name}</div>
       {editing && (
         <div className="container-tools compact-section-tools">
@@ -1467,6 +1611,148 @@ function EditorSection({
                 />
               </label>
               <label>
+                Width
+                <select
+                  value={section.widthMode || 'contained'}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { widthMode: event.target.value })}
+                >
+                  <option value="contained">Contained</option>
+                  <option value="full">Full screen</option>
+                </select>
+              </label>
+              <label>
+                Max width
+                <input
+                  type="number"
+                  min="320"
+                  max="1800"
+                  value={section.maxWidth || 1180}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { maxWidth: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Side gap
+                <input
+                  type="number"
+                  min="0"
+                  max="120"
+                  value={section.paddingX ?? 20}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { paddingX: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Top/bottom padding
+                <input
+                  type="number"
+                  min="0"
+                  max="180"
+                  value={section.paddingY || 0}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { paddingY: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Section gap
+                <input
+                  type="number"
+                  min="0"
+                  max="120"
+                  value={section.marginY ?? 28}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { marginY: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Corners
+                <input
+                  type="range"
+                  min="0"
+                  max="80"
+                  value={section.radius ?? 24}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { radius: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Rotate
+                <input
+                  type="range"
+                  min="-180"
+                  max="180"
+                  value={section.rotation || 0}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { rotation: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Border px
+                <input
+                  type="number"
+                  min="0"
+                  max="16"
+                  value={section.borderWidth ?? 1}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { borderWidth: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Border color
+                <input
+                  type="color"
+                  value={colorInputValue(section.borderColor, '#ffffff')}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { borderColor: event.target.value })}
+                />
+              </label>
+              <label>
+                Shadow
+                <select
+                  value={section.shadow || 'xl'}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { shadow: event.target.value })}
+                >
+                  {Object.keys(shadows).map(shadow => <option key={shadow} value={shadow}>{shadow}</option>)}
+                </select>
+              </label>
+              <label>
+                Opacity
+                <input
+                  type="range"
+                  min="0.1"
+                  max="1"
+                  step="0.05"
+                  value={section.opacity ?? 1}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { opacity: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Backdrop blur
+                <input
+                  type="range"
+                  min="0"
+                  max="64"
+                  value={section.backdropBlur ?? 18}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { backdropBlur: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Overflow
+                <select
+                  value={section.overflow || 'hidden'}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { overflow: event.target.value })}
+                >
+                  <option value="hidden">Clip</option>
+                  <option value="visible">Visible</option>
+                  <option value="auto">Scroll</option>
+                </select>
+              </label>
+              <label>
                 Background
                 <input
                   type="color"
@@ -1474,6 +1760,68 @@ function EditorSection({
                   onMouseDown={event => event.stopPropagation()}
                   onChange={event => onUpdateSection(section.id, { backgroundColor: event.target.value })}
                 />
+              </label>
+              <label>
+                BG image
+                <input
+                  type="file"
+                  accept="image/*,.gif"
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={uploadSectionImage}
+                />
+              </label>
+              <label>
+                BG URL
+                <input
+                  value={section.backgroundImage?.startsWith('data:') ? '' : section.backgroundImage || ''}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { backgroundImage: event.target.value })}
+                  placeholder="https://..."
+                />
+              </label>
+              <label>
+                BG size
+                <select
+                  value={section.backgroundSize || 'cover'}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { backgroundSize: event.target.value })}
+                >
+                  <option value="cover">Cover</option>
+                  <option value="contain">Contain</option>
+                  <option value="auto">Auto</option>
+                  <option value="100% 100%">Stretch</option>
+                </select>
+              </label>
+              <label>
+                BG position
+                <select
+                  value={section.backgroundPosition || 'center'}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { backgroundPosition: event.target.value })}
+                >
+                  <option value="center">Center</option>
+                  <option value="top">Top</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                  <option value="top left">Top left</option>
+                  <option value="top right">Top right</option>
+                  <option value="bottom left">Bottom left</option>
+                  <option value="bottom right">Bottom right</option>
+                </select>
+              </label>
+              <label>
+                BG repeat
+                <select
+                  value={section.backgroundRepeat || 'no-repeat'}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { backgroundRepeat: event.target.value })}
+                >
+                  <option value="no-repeat">No repeat</option>
+                  <option value="repeat">Repeat</option>
+                  <option value="repeat-x">Repeat X</option>
+                  <option value="repeat-y">Repeat Y</option>
+                </select>
               </label>
               <label>
                 Parallax
@@ -1498,6 +1846,11 @@ function EditorSection({
                 <option value="radial-gradient(circle at 20% 20%, #dbeafe, #ffffff 45%, #f8fafc)">Radial light</option>
               </select>
               <div className="section-action-group">
+                <button className="tool-btn" onClick={() => onUpdateSection(section.id, { widthMode: 'full', radius: 0, maxWidth: 1800 })}>Full</button>
+                <button className="tool-btn" onClick={() => onUpdateSection(section.id, { widthMode: 'contained', radius: 24, maxWidth: 1180, shadow: 'xl', backdropBlur: 18 })}>Card</button>
+                <button className="tool-btn" onMouseDown={startSectionRotate}>Hold Rotate</button>
+                <button className="tool-btn" onClick={() => onUpdateSection(section.id, { rotation: 0 })}>Reset Rotate</button>
+                <button className="tool-btn" onClick={() => onUpdateSection(section.id, { backgroundColor: 'transparent', backgroundImage: '', backgroundGradient: '', borderWidth: 0, shadow: 'none' })}>Clear BG</button>
                 <button className="tool-btn" onClick={() => onDuplicateSection(section.id)}>Duplicate</button>
                 <button className="tool-btn" onClick={() => onMoveSection(section.id, -1)}>Move Up</button>
                 <button className="tool-btn" onClick={() => onMoveSection(section.id, 1)}>Move Down</button>
@@ -1507,6 +1860,8 @@ function EditorSection({
           </details>
         </div>
       )}
+      {editing && <span className="section-rotate-handle" title="Hold and drag to rotate section" onMouseDown={startSectionRotate} />}
+      {editing && <span className="section-resize-handle" title="Resize section" onMouseDown={startSectionResize} />}
       {section.elements.map(item => (
         <EditableElement
           key={item.id}
@@ -1736,7 +2091,7 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
           <div className="card-mini-toolbar" onMouseDown={event => event.stopPropagation()}>
             <span className="card-mini-label">{item.type}</span>
             <button type="button" title="Move this card">Move</button>
-            <button type="button" title="Rotate using the round handle">Rotate</button>
+            <button type="button" title="Hold and drag to rotate" onMouseDown={startRotate}>Rotate</button>
             <button type="button" title="Add or edit a normal URL" onClick={() => applyQuickLink('url')}>Link</button>
             <button type="button" title="Add or edit a React route path" onClick={() => applyQuickLink('route')}>Route</button>
             {item.isButton && item.link && (
