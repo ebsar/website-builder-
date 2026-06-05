@@ -412,6 +412,8 @@ function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return defaultState();
       const parsed = JSON.parse(saved);
+      parsed.past = [];
+      parsed.future = [];
       if (parsed.navbar && !parsed.navbar.variant) {
         const wasOldBoostNav = ['Boost Bite', 'Boost Build'].includes(parsed.navbar.brand);
         parsed.navbar = freshNavbar({
@@ -452,7 +454,12 @@ function App() {
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      const { past, future, ...rest } = state;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
+    } catch (e) {
+      console.error("Failed to save state to localStorage:", e);
+    }
   }, [state]);
 
   const selected = state.sections.flatMap(sec => sec.elements.map(el => ({ ...el, sectionId: sec.id }))).find(el => el.id === state.selectedId);
