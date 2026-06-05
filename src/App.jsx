@@ -389,7 +389,18 @@ function defaultState() {
     mode: 'edit',
     websiteStyle: 'drawn',
     device: 'desktop',
-    navbar: freshNavbar(),
+    navbar: freshNavbar({
+      enabled: true,
+      brand: 'Boost Build',
+      links: ['Home', 'Features', 'Gallery', 'Pricing'],
+      linkPositions: [
+        { x: 380, y: 26 },
+        { x: 480, y: 26 },
+        { x: 580, y: 26 },
+        { x: 680, y: 26 }
+      ],
+      cta: 'Get Started'
+    }),
     selectedId: null,
     drawMode: false,
     drawingData: '',
@@ -402,7 +413,14 @@ function defaultState() {
     clipboard: null,
     past: [],
     future: [],
-    sections: [templateSections.hero()]
+    sections: [
+      templateSections.hero(),
+      templateSections.content(),
+      templateSections.gallery(),
+      templateSections.cta(),
+      templateSections.pricing(),
+      templateSections.testimonial()
+    ]
   };
 }
 
