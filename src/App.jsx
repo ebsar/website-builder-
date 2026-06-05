@@ -373,6 +373,9 @@ function freshNavbar(overrides = {}) {
     cta: '',
     ctaX: 980,
     ctaY: 18,
+    offsetX: 0,
+    offsetY: 0,
+    width: 1180,
     height: 82,
     backgroundColor: '#ffffff',
     rotation: 0,
@@ -1280,12 +1283,13 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
   if (!navbar?.enabled) return null;
 
   const navStyle = {
+    width: `min(${navbar.width || 1180}px, calc(100vw - 24px))`,
     minHeight: `${navbar.height || 108}px`,
     backgroundColor: navbar.backgroundColor || undefined,
     position: navbar.sticky ? 'sticky' : 'relative',
     top: navbar.sticky ? 54 : undefined,
     zIndex: editing ? 8800 : navbar.sticky ? 1200 : undefined,
-    transform: navbar.rotation ? `rotate(${navbar.rotation}deg)` : undefined,
+    transform: `translate(${navbar.offsetX || 0}px, ${navbar.offsetY || 0}px)${navbar.rotation ? ` rotate(${navbar.rotation}deg)` : ''}`,
     transformOrigin: 'center'
   };
 
@@ -1389,6 +1393,50 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
     window.addEventListener('mouseup', done);
   }
 
+  function startNavbarMove(event) {
+    if (!editing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startOffsetX = navbar.offsetX || 0;
+    const startOffsetY = navbar.offsetY || 0;
+    function move(e) {
+      onUpdate({
+        offsetX: Math.round(startOffsetX + e.clientX - startX),
+        offsetY: Math.round(startOffsetY + e.clientY - startY)
+      });
+    }
+    function done() {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', done);
+    }
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', done);
+  }
+
+  function startNavbarResize(event) {
+    if (!editing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startWidth = navbar.width || headerRef.current.getBoundingClientRect().width;
+    const startHeight = navbar.height || headerRef.current.getBoundingClientRect().height;
+    function move(e) {
+      onUpdate({
+        width: Math.max(220, Math.round(startWidth + e.clientX - startX)),
+        height: Math.max(44, Math.round(startHeight + e.clientY - startY))
+      });
+    }
+    function done() {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', done);
+    }
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', done);
+  }
+
   return (
     <header ref={headerRef} className={`header nav-${navbar.variant || 'fresh'} ${editing ? 'drawing-mode' : ''}`} id="header-container" style={navStyle}>
       {editing && guide && (
@@ -1432,6 +1480,18 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
               <input type="number" min="64" max="220" value={navbar.height || 108} onChange={event => onUpdate({ height: Number(event.target.value) })} />
             </label>
             <label>
+              W
+              <input type="number" min="220" max="1800" value={navbar.width || 1180} onChange={event => onUpdate({ width: Number(event.target.value) })} />
+            </label>
+            <label>
+              X
+              <input type="number" min="-2000" max="2000" value={navbar.offsetX || 0} onChange={event => onUpdate({ offsetX: Number(event.target.value) })} />
+            </label>
+            <label>
+              Y
+              <input type="number" min="-2000" max="2000" value={navbar.offsetY || 0} onChange={event => onUpdate({ offsetY: Number(event.target.value) })} />
+            </label>
+            <label>
               BG
               <input type="color" value={colorInputValue(navbar.backgroundColor, '#ffffff')} onChange={event => onUpdate({ backgroundColor: event.target.value })} />
             </label>
@@ -1442,13 +1502,17 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
             <button className="tool-btn" onClick={onAddLink}>Add Link</button>
             <button className="tool-btn" onClick={onAddButton}>Add Button</button>
             {navbar.cta && <button className="tool-btn btn-delete-section" onClick={() => onUpdate({ cta: '' })}>Remove Button</button>}
+            <button className="tool-btn" onMouseDown={startNavbarMove}>Hold Move</button>
+            <button className="tool-btn" onClick={() => onUpdate({ offsetX: 0, offsetY: 0 })}>Reset Move</button>
             <button className="tool-btn" onMouseDown={startNavbarRotate}>Hold Rotate</button>
             <button className="tool-btn" onClick={() => onUpdate({ rotation: 0 })}>Reset Rotate</button>
             <button className="tool-btn btn-delete-section" onClick={() => onUpdate({ enabled: false })}>Remove Navbar</button>
           </div>
         </details>
       )}
+      {editing && <span className="section-move-handle navbar-move-handle" title="Hold and drag to move navbar" onMouseDown={startNavbarMove} />}
       {editing && <span className="section-rotate-handle navbar-rotate-handle" title="Hold and drag to rotate navbar" onMouseDown={startNavbarRotate} />}
+      {editing && <span className="section-resize-handle navbar-resize-handle" title="Resize navbar" onMouseDown={startNavbarResize} />}
       <nav className="navbar" id="main-navbar">
         {(navbar.logoImage || navbar.brand) && (
           <a
