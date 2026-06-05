@@ -166,6 +166,8 @@ function section(name, elements = []) {
     paddingX: 20,
     paddingY: 0,
     marginY: 28,
+    offsetX: 0,
+    offsetY: 0,
     rotation: 0,
     radius: 24,
     borderWidth: 1,
@@ -174,7 +176,7 @@ function section(name, elements = []) {
     opacity: 1,
     blur: 0,
     backdropBlur: 18,
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: 'transparent',
     backgroundImage: '',
     backgroundGradient: '',
@@ -1528,6 +1530,27 @@ function EditorSection({
     window.addEventListener('mouseup', done);
   }
 
+  function startSectionMove(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startOffsetX = section.offsetX || 0;
+    const startOffsetY = section.offsetY || 0;
+    function move(e) {
+      onUpdateSection(section.id, {
+        offsetX: Math.round(startOffsetX + e.clientX - startX),
+        offsetY: Math.round(startOffsetY + e.clientY - startY)
+      });
+    }
+    function done() {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', done);
+    }
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', done);
+  }
+
   function startSectionRotate(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -1553,7 +1576,7 @@ function EditorSection({
     width: sectionWidth,
     margin: `${section.marginY ?? 28}px auto`,
     boxSizing: 'border-box',
-    transform: `rotate(${section.rotation || 0}deg)`,
+    transform: `translate(${section.offsetX || 0}px, ${section.offsetY || 0}px) rotate(${section.rotation || 0}deg)`,
     transformOrigin: 'center',
     minHeight: `${section.height || 620}px`,
     paddingTop: `${section.paddingY || 0}px`,
@@ -1685,6 +1708,28 @@ function EditorSection({
                   value={section.marginY ?? 28}
                   onMouseDown={event => event.stopPropagation()}
                   onChange={event => onUpdateSection(section.id, { marginY: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Move X
+                <input
+                  type="number"
+                  min="-2000"
+                  max="2000"
+                  value={section.offsetX || 0}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { offsetX: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Move Y
+                <input
+                  type="number"
+                  min="-2000"
+                  max="2000"
+                  value={section.offsetY || 0}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { offsetY: Number(event.target.value) })}
                 />
               </label>
               <label>
@@ -1870,6 +1915,8 @@ function EditorSection({
               <div className="section-action-group">
                 <button className="tool-btn" onClick={() => onUpdateSection(section.id, { widthMode: 'full', radius: 0, maxWidth: 1800 })}>Full</button>
                 <button className="tool-btn" onClick={() => onUpdateSection(section.id, { widthMode: 'contained', radius: 24, maxWidth: 1180, shadow: 'xl', backdropBlur: 18 })}>Card</button>
+                <button className="tool-btn" onMouseDown={startSectionMove}>Hold Move</button>
+                <button className="tool-btn" onClick={() => onUpdateSection(section.id, { offsetX: 0, offsetY: 0 })}>Reset Move</button>
                 <button className="tool-btn" onMouseDown={startSectionRotate}>Hold Rotate</button>
                 <button className="tool-btn" onClick={() => onUpdateSection(section.id, { rotation: 0 })}>Reset Rotate</button>
                 <button className="tool-btn" onClick={() => onUpdateSection(section.id, { backgroundColor: 'transparent', backgroundImage: '', backgroundGradient: '', borderWidth: 0, shadow: 'none' })}>Clear BG</button>
@@ -1882,6 +1929,7 @@ function EditorSection({
           </details>
         </div>
       )}
+      {editing && <span className="section-move-handle" title="Hold and drag to move section" onMouseDown={startSectionMove} />}
       {editing && <span className="section-rotate-handle" title="Hold and drag to rotate section" onMouseDown={startSectionRotate} />}
       {editing && <span className="section-resize-handle" title="Resize section" onMouseDown={startSectionResize} />}
       {section.elements.map(item => (
@@ -1989,8 +2037,8 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
 
     function move(e) {
       onUpdate(sectionId, item.id, {
-        left: Math.max(0, snap(startLeft + e.clientX - startX)),
-        top: Math.max(0, snap(startTop + e.clientY - startY))
+        left: snap(startLeft + e.clientX - startX),
+        top: snap(startTop + e.clientY - startY)
       });
     }
     function done() {
