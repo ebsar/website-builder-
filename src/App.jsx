@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const STORAGE_KEY = 'grug_react_builder_state';
 
@@ -211,6 +211,11 @@ function historySnapshot(state) {
     websiteStyle: state.websiteStyle,
     device: state.device,
     navbar: state.navbar,
+    drawMode: state.drawMode,
+    drawingData: state.drawingData,
+    penColor: state.penColor,
+    penSize: state.penSize,
+    erasing: state.erasing,
     selectedId: state.selectedId,
     snapToGrid: state.snapToGrid,
     showGrid: state.showGrid,
@@ -332,14 +337,27 @@ function defaultState() {
     websiteStyle: 'drawn',
     device: 'desktop',
     navbar: {
-      brand: 'Boost Bite',
+      brand: 'Boost Build',
+      logoType: 'text',
+      logoImage: '',
+      logoX: 72,
+      logoY: 36,
       links: ['Home', 'About', 'Services', 'Blog'],
+      linksX: 390,
+      linksY: 42,
       cta: 'Contact Now',
+      ctaX: 970,
+      ctaY: 36,
       height: 108,
       backgroundColor: '#cfe6fb',
       sticky: false
     },
     selectedId: null,
+    drawMode: false,
+    drawingData: '',
+    penColor: '#2563eb',
+    penSize: 4,
+    erasing: false,
     snapToGrid: true,
     showGrid: true,
     gridSize: 10,
@@ -354,7 +372,12 @@ function App() {
   const [state, setState] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : defaultState();
+      if (!saved) return defaultState();
+      const parsed = JSON.parse(saved);
+      if (parsed.navbar?.brand === 'Boost Bite') {
+        parsed.navbar = { ...parsed.navbar, brand: 'Boost Build' };
+      }
+      return parsed;
     } catch {
       return defaultState();
     }
@@ -780,6 +803,23 @@ function App() {
         onGridSize={gridSize => setUiState(prev => ({ ...prev, gridSize: Number(gridSize) }))}
         onWebsiteStyle={websiteStyle => commitState(prev => ({ ...prev, websiteStyle }))}
         onDevice={device => setUiState(prev => ({ ...prev, device }))}
+        drawMode={state.drawMode}
+        penColor={state.penColor}
+        penSize={state.penSize}
+        erasing={state.erasing}
+        onToggleDraw={() => setUiState(prev => ({ ...prev, drawMode: !prev.drawMode, selectedId: null }))}
+        onPenColor={penColor => setUiState(prev => ({ ...prev, penColor, erasing: false }))}
+        onPenSize={penSize => setUiState(prev => ({ ...prev, penSize: Number(penSize) }))}
+        onEraser={() => setUiState(prev => ({ ...prev, erasing: !prev.erasing }))}
+        onClearDrawing={() => commitState(prev => ({ ...prev, drawingData: '' }))}
+      />
+      <DrawOverlay
+        enabled={state.drawMode}
+        drawingData={state.drawingData}
+        color={state.penColor}
+        size={state.penSize}
+        erasing={state.erasing}
+        onSave={drawingData => setUiState(prev => ({ ...prev, drawingData }))}
       />
       <button className={`redraw-btn ${state.mode === 'edit' ? 'save-state' : ''}`} onClick={() => setUiState(prev => ({ ...prev, mode: prev.mode === 'edit' ? 'preview' : 'edit', selectedId: null }))}>
         {state.mode === 'edit' ? 'Save Design' : 'Edit Design'}
@@ -845,6 +885,83 @@ function SketchFilters() {
   );
 }
 
+function DrawOverlay({ enabled, drawingData, color, size, erasing, onSave }) {
+  const canvasRef = useRef(null);
+  const isDrawingRef = useRef(false);
+  const lastRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+      const image = canvas.toDataURL('image/png');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (drawingData || image) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        img.src = drawingData || image;
+      }
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, [drawingData]);
+
+  function point(event) {
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+  }
+
+  function start(event) {
+    if (!enabled) return;
+    event.preventDefault();
+    isDrawingRef.current = true;
+    lastRef.current = point(event);
+  }
+
+  function move(event) {
+    if (!enabled || !isDrawingRef.current) return;
+    event.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const next = point(event);
+    ctx.globalCompositeOperation = erasing ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = color || '#2563eb';
+    ctx.lineWidth = Number(size || 4);
+    ctx.beginPath();
+    ctx.moveTo(lastRef.current.x, lastRef.current.y);
+    ctx.lineTo(next.x, next.y);
+    ctx.stroke();
+    lastRef.current = next;
+  }
+
+  function stop() {
+    if (!isDrawingRef.current) return;
+    isDrawingRef.current = false;
+    onSave(canvasRef.current.toDataURL('image/png'));
+  }
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`draw-overlay ${enabled ? 'is-drawing' : ''}`}
+      onPointerDown={start}
+      onPointerMove={move}
+      onPointerUp={stop}
+      onPointerLeave={stop}
+    />
+  );
+}
+
 function TopToolbar({
   mode,
   websiteStyle,
@@ -876,7 +993,16 @@ function TopToolbar({
   onToggleGrid,
   onGridSize,
   onWebsiteStyle,
-  onDevice
+  onDevice,
+  drawMode,
+  penColor,
+  penSize,
+  erasing,
+  onToggleDraw,
+  onPenColor,
+  onPenSize,
+  onEraser,
+  onClearDrawing
 }) {
   return (
     <div className={`draw-controls react-builder-top editor-top-${websiteStyle}`}>
@@ -884,7 +1010,7 @@ function TopToolbar({
         <div className="editor-brand">
           <span className="editor-brand-mark">GB</span>
           <span>
-            <strong>Website Builder</strong>
+            <strong>Boost Build</strong>
             <small>{websiteStyle === 'modern' ? 'Modern workspace' : 'Drawn workspace'}</small>
           </span>
         </div>
@@ -911,6 +1037,18 @@ function TopToolbar({
                 Size
                 <input type="number" min="4" max="80" value={gridSize || 10} onChange={event => onGridSize(event.target.value)} />
               </label>
+              <span className="menu-section-title">Draw</span>
+              <button className={`builder-btn ${drawMode ? 'active-tool' : ''}`} onClick={onToggleDraw}>Draw Mode</button>
+              <button className={`builder-btn ${erasing ? 'active-tool' : ''}`} onClick={onEraser}>Eraser</button>
+              <label className="grid-size-control">
+                Pen
+                <input type="color" value={penColor || '#2563eb'} onChange={event => onPenColor(event.target.value)} />
+              </label>
+              <label className="grid-size-control">
+                Size
+                <input type="number" min="1" max="40" value={penSize || 4} onChange={event => onPenSize(event.target.value)} />
+              </label>
+              <button className="builder-btn danger-btn" onClick={onClearDrawing}>Clear Drawing</button>
             </div>
           </details>
           <details className="editor-menu">
@@ -989,6 +1127,8 @@ function TopToolbar({
 }
 
 function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemoveLink }) {
+  const headerRef = useRef(null);
+  const [guide, setGuide] = useState(null);
   const navStyle = {
     minHeight: `${navbar.height || 108}px`,
     backgroundColor: navbar.backgroundColor || undefined,
@@ -997,8 +1137,64 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
     zIndex: navbar.sticky ? 1200 : undefined
   };
 
+  function uploadLogo(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onUpdate({ logoType: 'image', logoImage: reader.result });
+    reader.readAsDataURL(file);
+  }
+
+  function startNavbarDrag(event, keyX, keyY) {
+    if (!editing) return;
+    if (event.target.closest('input, button, select, label')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = headerRef.current.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const initialX = Number(navbar[keyX] || 0);
+    const initialY = Number(navbar[keyY] || 0);
+
+    function move(e) {
+      const nextX = Math.max(0, Math.min(rect.width - 80, initialX + e.clientX - startX));
+      const nextY = Math.max(0, Math.min(rect.height - 40, initialY + e.clientY - startY));
+      const snapX = Math.abs(nextX - rect.width / 2) < 8 ? rect.width / 2 : nextX;
+      const snapY = Math.abs(nextY - rect.height / 2) < 8 ? rect.height / 2 : nextY;
+      onUpdate({ [keyX]: Math.round(snapX), [keyY]: Math.round(snapY) });
+      setGuide({
+        vertical: Math.abs(snapX - rect.width / 2) < 8,
+        horizontal: Math.abs(snapY - rect.height / 2) < 8,
+        top: nextY < 8,
+        bottom: Math.abs(nextY - (rect.height - 40)) < 8,
+        left: nextX < 8,
+        right: Math.abs(nextX - (rect.width - 80)) < 8
+      });
+    }
+
+    function done() {
+      setGuide(null);
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', done);
+    }
+
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', done);
+  }
+
   return (
-    <header className={`header ${editing ? 'drawing-mode' : ''}`} id="header-container" style={navStyle}>
+    <header ref={headerRef} className={`header ${editing ? 'drawing-mode' : ''}`} id="header-container" style={navStyle}>
+      {editing && guide && (
+        <>
+          {guide.vertical && <span className="nav-guide nav-guide-v">Center X</span>}
+          {guide.horizontal && <span className="nav-guide nav-guide-h">Center Y</span>}
+          {(guide.top || guide.bottom || guide.left || guide.right) && (
+            <span className="nav-guide-badge">
+              {guide.top ? 'Top ' : ''}{guide.bottom ? 'Bottom ' : ''}{guide.left ? 'Left ' : ''}{guide.right ? 'Right' : ''}
+            </span>
+          )}
+        </>
+      )}
       {editing && (
         <details className="navbar-editor-tools compact-editor-menu">
           <summary>Navbar</summary>
@@ -1010,6 +1206,17 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
             <label>
               CTA
               <input value={navbar.cta || ''} onChange={event => onUpdate({ cta: event.target.value })} />
+            </label>
+            <label>
+              Logo
+              <select value={navbar.logoType || 'text'} onChange={event => onUpdate({ logoType: event.target.value })}>
+                <option value="text">Text</option>
+                <option value="image">Image</option>
+              </select>
+            </label>
+            <label>
+              Logo image
+              <input type="file" accept="image/*" onChange={uploadLogo} />
             </label>
             <label>
               H
@@ -1028,14 +1235,30 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
         </details>
       )}
       <nav className="navbar" id="main-navbar">
-        <a href="#" className="logo" id="nav-logo">
-          <svg className="pen-icon" viewBox="0 0 100 100" width="36" height="36">
-            <path d="M 22 78 Q 23 72 26 68 Q 24 66 22 64 Q 18 67 15 70 Z" fill="#111" stroke="#111" strokeWidth="2" />
-            <path d="M 26 68 L 68 26 C 71 23 75 27 72 30 L 30 72 Z" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span className="logo-text">{navbar.brand || 'Boost Bite'}</span>
+        <a
+          href="#"
+          className="logo nav-editable-item"
+          id="nav-logo"
+          style={{ left: navbar.logoX || 72, top: navbar.logoY || 36 }}
+          onMouseDown={event => startNavbarDrag(event, 'logoX', 'logoY')}
+        >
+          {navbar.logoType === 'image' && navbar.logoImage ? (
+            <img className="navbar-logo-image" src={navbar.logoImage} alt={navbar.brand || 'Boost Build'} />
+          ) : (
+            <>
+              <svg className="pen-icon" viewBox="0 0 100 100" width="36" height="36">
+                <path d="M 22 78 Q 23 72 26 68 Q 24 66 22 64 Q 18 67 15 70 Z" fill="#111" stroke="#111" strokeWidth="2" />
+                <path d="M 26 68 L 68 26 C 71 23 75 27 72 30 L 30 72 Z" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="logo-text">{navbar.brand || 'Boost Build'}</span>
+            </>
+          )}
         </a>
-        <div className="nav-menu">
+        <div
+          className="nav-menu nav-editable-item"
+          style={{ left: navbar.linksX || 390, top: navbar.linksY || 42 }}
+          onMouseDown={event => startNavbarDrag(event, 'linksX', 'linksY')}
+        >
           {(navbar.links || []).map((link, index) => (
             <span className="nav-link nav-link-editable" key={`${link}_${index}`}>
               {editing ? (
@@ -1049,7 +1272,11 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
             </span>
           ))}
         </div>
-        <div className="nav-actions">
+        <div
+          className="nav-actions nav-editable-item"
+          style={{ left: navbar.ctaX || 970, top: navbar.ctaY || 36 }}
+          onMouseDown={event => startNavbarDrag(event, 'ctaX', 'ctaY')}
+        >
           <a href="#" className="contact-btn"><span>{navbar.cta || 'Contact Now'}</span></a>
         </div>
       </nav>

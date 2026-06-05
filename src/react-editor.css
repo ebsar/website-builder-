@@ -39,6 +39,18 @@ select,
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+.draw-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  pointer-events: none;
+}
+
+.draw-overlay.is-drawing {
+  pointer-events: auto;
+  cursor: crosshair !important;
+}
+
 :root {
   --glass-bg: rgba(255, 255, 255, 0.62);
   --glass-bg-strong: rgba(255, 255, 255, 0.78);
@@ -97,6 +109,69 @@ select,
   max-width: 1180px;
   margin: 0 auto;
   padding: 16px 24px;
+  position: relative;
+  min-height: 76px;
+}
+
+.nav-editable-item {
+  position: absolute !important;
+  z-index: 20;
+}
+
+.drawing-mode .nav-editable-item {
+  cursor: move !important;
+}
+
+.navbar-logo-image {
+  max-width: 180px;
+  max-height: 56px;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-guide {
+  position: absolute;
+  z-index: 8800;
+  pointer-events: none;
+  color: #2563eb;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.nav-guide-v {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  border-left: 2px solid rgba(37, 99, 235, 0.8);
+  padding-left: 6px;
+}
+
+.nav-guide-h {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  border-top: 2px solid rgba(37, 99, 235, 0.8);
+  padding-top: 6px;
+}
+
+.nav-guide-badge {
+  position: absolute;
+  z-index: 8801;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.92);
+  color: #ffffff;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  pointer-events: none;
 }
 
 .site-style-modern .logo,
