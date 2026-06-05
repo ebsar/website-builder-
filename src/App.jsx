@@ -359,15 +359,15 @@ function freshNavbar(overrides = {}) {
   return {
     enabled: false,
     variant: 'fresh',
-    brand: 'Your Brand',
+    brand: '',
     logoType: 'text',
     logoImage: '',
     logoX: 42,
     logoY: 22,
-    links: ['Home', 'Work', 'Pricing', 'Contact'],
+    links: [],
     linksX: 360,
     linksY: 26,
-    cta: 'Get Started',
+    cta: '',
     ctaX: 980,
     ctaY: 18,
     height: 82,
@@ -411,9 +411,9 @@ function App() {
         parsed.navbar = freshNavbar({
           ...parsed.navbar,
           variant: 'fresh',
-          brand: wasOldBoostNav ? 'Your Brand' : parsed.navbar.brand || 'Your Brand',
-          links: wasOldBoostNav ? ['Home', 'Work', 'Pricing', 'Contact'] : parsed.navbar.links,
-          cta: wasOldBoostNav ? 'Get Started' : parsed.navbar.cta || 'Get Started',
+          brand: wasOldBoostNav ? '' : parsed.navbar.brand || '',
+          links: wasOldBoostNav ? [] : parsed.navbar.links || [],
+          cta: wasOldBoostNav ? '' : parsed.navbar.cta || '',
           height: Number(parsed.navbar.height) > 96 ? 82 : parsed.navbar.height || 82,
           backgroundColor: parsed.navbar.backgroundColor === '#cfe6fb' ? '#ffffff' : parsed.navbar.backgroundColor || '#ffffff',
           logoX: wasOldBoostNav ? 42 : parsed.navbar.logoX,
@@ -423,6 +423,18 @@ function App() {
           ctaX: wasOldBoostNav ? 980 : parsed.navbar.ctaX,
           ctaY: wasOldBoostNav ? 18 : parsed.navbar.ctaY
         });
+      } else if (parsed.navbar?.variant === 'fresh') {
+        const hasOldFreshDefaults = parsed.navbar.brand === 'Your Brand'
+          && parsed.navbar.cta === 'Get Started'
+          && JSON.stringify(parsed.navbar.links || []) === JSON.stringify(['Home', 'Work', 'Pricing', 'Contact']);
+        if (hasOldFreshDefaults) {
+          parsed.navbar = freshNavbar({
+            ...parsed.navbar,
+            brand: '',
+            links: [],
+            cta: ''
+          });
+        }
       }
       if (parsed.navbar && typeof parsed.navbar.enabled === 'undefined') {
         parsed.navbar = { ...parsed.navbar, enabled: false };
@@ -662,7 +674,14 @@ function App() {
   function addNavbarLink() {
     commitState(prev => {
       const navbar = prev.navbar || defaultState().navbar;
-      return { ...prev, navbar: { ...navbar, links: [...(navbar.links || []), 'New Link'] } };
+      return { ...prev, navbar: { ...navbar, links: [...(navbar.links || []), 'Link'] } };
+    });
+  }
+
+  function addNavbarButton() {
+    commitState(prev => {
+      const navbar = prev.navbar || defaultState().navbar;
+      return { ...prev, navbar: { ...navbar, cta: navbar.cta || 'Button' } };
     });
   }
 
@@ -938,6 +957,7 @@ function App() {
           onUpdate={updateNavbar}
           onLinkUpdate={updateNavbarLink}
           onAddLink={addNavbarLink}
+          onAddButton={addNavbarButton}
           onRemoveLink={removeNavbarLink}
         />
 
@@ -1237,7 +1257,7 @@ function TopToolbar({
   );
 }
 
-function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemoveLink }) {
+function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddButton, onRemoveLink }) {
   const headerRef = useRef(null);
   const [guide, setGuide] = useState(null);
   if (!navbar?.enabled) return null;
@@ -1337,10 +1357,12 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
               Brand
               <input value={navbar.brand || ''} onChange={event => onUpdate({ brand: event.target.value })} />
             </label>
-            <label>
-              CTA
-              <input value={navbar.cta || ''} onChange={event => onUpdate({ cta: event.target.value })} />
-            </label>
+            {navbar.cta && (
+              <label>
+                Button text
+                <input value={navbar.cta || ''} onChange={event => onUpdate({ cta: event.target.value })} />
+              </label>
+            )}
             <label>
               Logo
               <select value={navbar.logoType || 'text'} onChange={event => onUpdate({ logoType: event.target.value })}>
@@ -1365,6 +1387,8 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
               <input type="checkbox" checked={!!navbar.sticky} onChange={event => onUpdate({ sticky: event.target.checked })} />
             </label>
             <button className="tool-btn" onClick={onAddLink}>Add Link</button>
+            <button className="tool-btn" onClick={onAddButton}>Add Button</button>
+            {navbar.cta && <button className="tool-btn btn-delete-section" onClick={() => onUpdate({ cta: '' })}>Remove Button</button>}
             <button className="tool-btn" onMouseDown={startNavbarRotate}>Hold Rotate</button>
             <button className="tool-btn" onClick={() => onUpdate({ rotation: 0 })}>Reset Rotate</button>
             <button className="tool-btn btn-delete-section" onClick={() => onUpdate({ enabled: false })}>Remove Navbar</button>
@@ -1373,55 +1397,53 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
       )}
       {editing && <span className="section-rotate-handle navbar-rotate-handle" title="Hold and drag to rotate navbar" onMouseDown={startNavbarRotate} />}
       <nav className="navbar" id="main-navbar">
-        <a
-          href="#"
-          className="logo nav-editable-item"
-          id="nav-logo"
-          style={{ left: navbar.logoX || 72, top: navbar.logoY || 36 }}
-          onMouseDown={event => startNavbarDrag(event, 'logoX', 'logoY')}
-        >
-          {navbar.logoType === 'image' && navbar.logoImage ? (
-            <img className="navbar-logo-image" src={navbar.logoImage} alt={navbar.brand || 'Boost Build'} />
-          ) : (navbar.variant || 'fresh') === 'fresh' ? (
-            <>
-              <span className="fresh-logo-mark">{(navbar.brand || 'Y').trim().slice(0, 1).toUpperCase()}</span>
-              <span className="logo-text">{navbar.brand || 'Your Brand'}</span>
-            </>
-          ) : (
-            <>
-              <svg className="pen-icon" viewBox="0 0 100 100" width="36" height="36">
-                <path d="M 22 78 Q 23 72 26 68 Q 24 66 22 64 Q 18 67 15 70 Z" fill="#111" stroke="#111" strokeWidth="2" />
-                <path d="M 26 68 L 68 26 C 71 23 75 27 72 30 L 30 72 Z" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="logo-text">{navbar.brand || 'Boost Build'}</span>
-            </>
-          )}
-        </a>
-        <div
-          className="nav-menu nav-editable-item"
-          style={{ left: navbar.linksX || 390, top: navbar.linksY || 42 }}
-          onMouseDown={event => startNavbarDrag(event, 'linksX', 'linksY')}
-        >
-          {(navbar.links || []).map((link, index) => (
-            <span className="nav-link nav-link-editable" key={`${link}_${index}`}>
-              {editing ? (
-                <>
-                  <input value={link} onChange={event => onLinkUpdate(index, event.target.value)} aria-label={`Navbar link ${index + 1}`} />
-                  <button onClick={() => onRemoveLink(index)} aria-label={`Remove ${link}`}>x</button>
-                </>
-              ) : (
-                <span>{link}</span>
-              )}
-            </span>
-          ))}
-        </div>
-        <div
-          className="nav-actions nav-editable-item"
-          style={{ left: navbar.ctaX || 970, top: navbar.ctaY || 36 }}
-          onMouseDown={event => startNavbarDrag(event, 'ctaX', 'ctaY')}
-        >
-          <a href="#" className="contact-btn"><span>{navbar.cta || 'Contact Now'}</span></a>
-        </div>
+        {(navbar.logoImage || navbar.brand) && (
+          <a
+            href="#"
+            className="logo nav-editable-item"
+            id="nav-logo"
+            style={{ left: navbar.logoX || 72, top: navbar.logoY || 36 }}
+            onMouseDown={event => startNavbarDrag(event, 'logoX', 'logoY')}
+          >
+            {navbar.logoType === 'image' && navbar.logoImage ? (
+              <img className="navbar-logo-image" src={navbar.logoImage} alt={navbar.brand || 'Logo'} />
+            ) : (
+              <>
+                <span className="fresh-logo-mark">{(navbar.brand || 'L').trim().slice(0, 1).toUpperCase()}</span>
+                <span className="logo-text">{navbar.brand}</span>
+              </>
+            )}
+          </a>
+        )}
+        {(navbar.links || []).length > 0 && (
+          <div
+            className="nav-menu nav-editable-item"
+            style={{ left: navbar.linksX || 390, top: navbar.linksY || 42 }}
+            onMouseDown={event => startNavbarDrag(event, 'linksX', 'linksY')}
+          >
+            {(navbar.links || []).map((link, index) => (
+              <span className="nav-link nav-link-editable" key={`${link}_${index}`}>
+                {editing ? (
+                  <>
+                    <input value={link} onChange={event => onLinkUpdate(index, event.target.value)} aria-label={`Navbar link ${index + 1}`} />
+                    <button onClick={() => onRemoveLink(index)} aria-label={`Remove ${link}`}>x</button>
+                  </>
+                ) : (
+                  <span>{link}</span>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
+        {navbar.cta && (
+          <div
+            className="nav-actions nav-editable-item"
+            style={{ left: navbar.ctaX || 970, top: navbar.ctaY || 36 }}
+            onMouseDown={event => startNavbarDrag(event, 'ctaX', 'ctaY')}
+          >
+            <a href="#" className="contact-btn"><span>{navbar.cta}</span></a>
+          </div>
+        )}
       </nav>
     </header>
   );
@@ -2092,6 +2114,7 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
             <span className="card-mini-label">{item.type}</span>
             <button type="button" title="Move this card">Move</button>
             <button type="button" title="Hold and drag to rotate" onMouseDown={startRotate}>Rotate</button>
+            <button type="button" title="Reset rotation" onClick={() => onUpdate(sectionId, item.id, { rotation: 0 })}>0 deg</button>
             <button type="button" title="Add or edit a normal URL" onClick={() => applyQuickLink('url')}>Link</button>
             <button type="button" title="Add or edit a React route path" onClick={() => applyQuickLink('route')}>Route</button>
             {item.isButton && item.link && (
@@ -2116,7 +2139,10 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
               Delete
             </button>
           </div>
-          <span className="rotate-handle" onMouseDown={startRotate} />
+          <span className="rotate-handle rotate-handle-top" title="Hold and drag to rotate" onMouseDown={startRotate} />
+          <span className="rotate-handle rotate-handle-left" title="Hold and drag to rotate" onMouseDown={startRotate} />
+          <span className="rotate-handle rotate-handle-right" title="Hold and drag to rotate" onMouseDown={startRotate} />
+          <span className="rotate-handle rotate-handle-bottom" title="Hold and drag to rotate" onMouseDown={startRotate} />
           <span className="resize-handle" onMouseDown={startResize} />
         </>
       )}
