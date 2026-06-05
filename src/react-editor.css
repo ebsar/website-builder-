@@ -2117,6 +2117,75 @@ select,
   50% { rotate: 2deg; }
 }
 
+.anim-gravity {
+  animation: reactGravity 1.2s ease both;
+  transform-origin: bottom center;
+}
+
+.anim-gravity-bounce {
+  animation: reactGravityLoop 2.2s ease infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes reactGravity {
+  0% {
+    transform: translateY(-300px) scaleY(1.2) scaleX(0.85);
+    opacity: 0;
+    animation-timing-function: ease-in;
+  }
+  35% {
+    transform: translateY(0) scaleY(0.85) scaleX(1.15);
+    opacity: 1;
+    animation-timing-function: ease-out;
+  }
+  50% {
+    transform: translateY(-80px) scaleY(1.05) scaleX(0.95);
+    animation-timing-function: ease-in;
+  }
+  65% {
+    transform: translateY(0) scaleY(0.95) scaleX(1.05);
+    animation-timing-function: ease-out;
+  }
+  80% {
+    transform: translateY(-25px) scaleY(1.02) scaleX(0.98);
+    animation-timing-function: ease-in;
+  }
+  92% {
+    transform: translateY(0) scaleY(0.98) scaleX(1.02);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: translateY(0) scaleY(1) scaleX(1);
+  }
+}
+
+@keyframes reactGravityLoop {
+  0%, 100% {
+    transform: translateY(-60px) scaleY(1.05) scaleX(0.95);
+    animation-timing-function: ease-in;
+  }
+  40% {
+    transform: translateY(0) scaleY(0.88) scaleX(1.12);
+    animation-timing-function: ease-out;
+  }
+  50% {
+    transform: translateY(0) scaleY(1.05) scaleX(0.95);
+    animation-timing-function: ease-in;
+  }
+  60% {
+    transform: translateY(-20px) scaleY(1.02) scaleX(0.98);
+    animation-timing-function: ease-out;
+  }
+  75% {
+    transform: translateY(0) scaleY(0.95) scaleX(1.05);
+    animation-timing-function: ease-in;
+  }
+  85% {
+    transform: translateY(-6px) scaleY(1) scaleX(1);
+    animation-timing-function: ease-out;
+  }
+}
+
 @media (max-width: 900px) {
   .react-inspector {
     position: static;
@@ -2603,3 +2672,233 @@ select,
   color: #94a3b8 !important;
   padding: 0 4px !important;
 }
+
+/* ==========================================================================
+   CHALKBOARD THEME (DARK DRAWN)
+   ========================================================================== */
+
+.site-style-drawn-dark {
+  background-color: #1a231f !important;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+  color: #ffffff !important;
+  font-family: 'Cabin Sketch', cursive !important;
+  min-height: 100vh;
+}
+
+.site-style-drawn-dark .header {
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.6) !important;
+  background-color: rgba(26, 35, 31, 0.9) !important;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.site-style-drawn-dark .navbar {
+  border-color: #ffffff !important;
+}
+
+.site-style-drawn-dark .logo-text,
+.site-style-drawn-dark .nav-link,
+.site-style-drawn-dark .contact-btn {
+  color: #ffffff !important;
+  font-family: 'Cabin Sketch', cursive !important;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.6) !important;
+}
+
+.site-style-drawn-dark .contact-btn {
+  border: 2px solid #ffffff !important;
+  background: transparent !important;
+}
+
+.site-style-drawn-dark .contact-btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.site-style-drawn-dark .workspace {
+  background-color: rgba(26, 35, 31, 0.8) !important;
+  background-image:
+    radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 0.04) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 72% 34%, rgba(255, 255, 255, 0.03) 0 1px, transparent 1.5px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02), transparent 18%, rgba(255, 255, 255, 0.05) 50%, transparent 82%, rgba(255, 255, 255, 0.02)),
+    linear-gradient(#202d27, #151d1a) !important;
+  border: 3px dashed rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+
+.site-style-drawn-dark .workspace.drawing-mode {
+  border-color: #ffffff !important;
+}
+
+.site-style-drawn-dark .sandbox-element {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.site-style-drawn-dark .element-text-content {
+  color: #ffffff !important;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.8) !important;
+}
+
+.site-style-drawn-dark .section-label {
+  background: #ffffff !important;
+  color: #1a231f !important;
+  border: 2px solid #1a231f !important;
+  box-shadow: 3px 3px 0 #ffffff !important;
+}
+
+/* ==========================================================================
+   MIDNIGHT THEME (DARK MODERN)
+   ========================================================================== */
+
+.site-style-modern-dark {
+  background: 
+    radial-gradient(circle at 16% 8%, rgba(99, 102, 241, 0.18), transparent 30%),
+    radial-gradient(circle at 85% 4%, rgba(6, 182, 212, 0.16), transparent 30%),
+    linear-gradient(180deg, #070913, #02040a 60%, #070913) !important;
+  color: #f1f5f9 !important;
+  font-family: 'Inter', Arial, sans-serif !important;
+  min-height: 100vh;
+}
+
+.site-style-modern-dark .header {
+  background: rgba(10, 15, 30, 0.75) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.site-style-modern-dark .logo-text {
+  color: #ffffff !important;
+  font-family: 'Inter', Arial, sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.site-style-modern-dark .nav-link {
+  color: #94a3b8 !important;
+  font-family: 'Inter', Arial, sans-serif !important;
+  font-weight: 550 !important;
+}
+
+.site-style-modern-dark .nav-link:hover {
+  color: #ffffff !important;
+}
+
+.site-style-modern-dark .contact-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25) !important;
+}
+
+.site-style-modern-dark .contact-btn:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca) !important;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4) !important;
+}
+
+.site-style-modern-dark .workspace {
+  background-color: rgba(10, 16, 32, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55) !important;
+  color: #f1f5f9 !important;
+}
+
+.site-style-modern-dark .sandbox-element {
+  color: #f1f5f9 !important;
+}
+
+.site-style-modern-dark .react-element[data-type="box"],
+.site-style-modern-dark .react-element[data-type="button"],
+.site-style-modern-dark .react-element[data-type="input"],
+.site-style-modern-dark .react-element[data-type="video"] {
+  background-color: rgba(17, 24, 43, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.site-style-modern-dark .element-text-content {
+  color: #f1f5f9 !important;
+}
+
+.site-style-modern-dark .section-label {
+  background: rgba(30, 41, 59, 0.9) !important;
+  color: #6366f1 !important;
+  border: 1px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+/* ==========================================================================
+   PREMIUM ENTRANCE & HOVER EFFECT STYLES
+   ========================================================================== */
+
+/* Entrance Animation: Mask Reveal */
+.anim-mask-reveal {
+  animation: maskReveal 1.2s cubic-bezier(0.77, 0, 0.175, 1) forwards !important;
+  clip-path: inset(0 100% 0 0);
+}
+
+@keyframes maskReveal {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Entrance Animation: Blur Focus */
+.anim-blur-focus {
+  animation: blurFocus 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}
+
+@keyframes blurFocus {
+  0% {
+    filter: blur(24px);
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  100% {
+    filter: blur(0);
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Hover Effect: Glitch (RGB Split) */
+.hover-glitch {
+  transition: clip-path 0.15s ease, transform 0.15s ease !important;
+}
+
+.hover-glitch:hover {
+  animation: cyberGlitch 0.35s linear infinite !important;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.5) !important;
+}
+
+@keyframes cyberGlitch {
+  0% {
+    clip-path: inset(40% 0 61% 0);
+    transform: skew(0.5deg);
+  }
+  20% {
+    clip-path: inset(92% 0 1% 0);
+    transform: skew(-0.8deg);
+  }
+  40% {
+    clip-path: inset(15% 0 80% 0);
+    transform: skew(0.8deg);
+  }
+  60% {
+    clip-path: inset(80% 0 5% 0);
+    transform: skew(-0.5deg);
+  }
+  80% {
+    clip-path: inset(3% 0 92% 0);
+    transform: skew(1.2deg);
+  }
+  100% {
+    clip-path: inset(40% 0 61% 0);
+    transform: skew(0deg);
+  }
+}
+
+/* Hover Effect: Magnetic transition */
+.hover-magnetic {
+  transition: transform 0.1s ease-out, box-shadow 0.2s ease !important;
+}
+

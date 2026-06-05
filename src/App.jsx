@@ -19,7 +19,11 @@ const animations = [
   { value: 'pop', label: 'Pop' },
   { value: 'pulse', label: 'Pulse' },
   { value: 'float', label: 'Float' },
-  { value: 'tilt', label: 'Tilt' }
+  { value: 'tilt', label: 'Tilt' },
+  { value: 'gravity', label: 'Gravity Drop' },
+  { value: 'gravity-bounce', label: 'Gravity Bounce (Loop)' },
+  { value: 'mask-reveal', label: 'Mask Reveal' },
+  { value: 'blur-focus', label: 'Blur Focus' }
 ];
 
 const shadows = {
@@ -38,7 +42,7 @@ const shadows = {
 };
 
 const blendModes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'luminosity'];
-const hoverEffects = ['none', 'lift', 'grow', 'tilt', 'glow', 'blur', 'dim'];
+const hoverEffects = ['none', 'lift', 'grow', 'tilt', 'magnetic', 'glow', 'glitch', 'blur', 'dim'];
 const clipShapes = ['none', 'circle', 'diamond', 'hexagon', 'ticket', 'slant'];
 const objectFits = ['cover', 'contain', 'fill', 'none', 'scale-down'];
 const textAnimations = [
@@ -184,9 +188,14 @@ function section(name, elements = []) {
     backgroundRepeat: 'no-repeat',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
+    dividerType: 'none',
+    dividerColor: '#ffffff',
+    dividerHeight: 80,
+    dividerPosition: 'none',
     elements
   };
 }
+
 
 function cloneTextLayer(layer) {
   return {
@@ -230,6 +239,49 @@ function effectLevel(value) {
 function effectValue(level) {
   return Number(level) + 100;
 }
+
+function SectionDivider({ type, position, color, height }) {
+  if (!type || type === 'none' || !position || position === 'none') return null;
+
+  const isTop = position === 'top';
+  const style = {
+    position: 'absolute',
+    left: 0,
+    width: '100%',
+    height: `${height || 80}px`,
+    fill: color || '#ffffff',
+    pointerEvents: 'none',
+    zIndex: 10,
+    ...(isTop ? { top: 0, transform: 'scaleY(-1)', transformOrigin: 'center' } : { bottom: 0 })
+  };
+
+  if (type === 'waves') {
+    return (
+      <svg viewBox="0 0 1440 120" preserveAspectRatio="none" style={style}>
+        <path d="M0,64L48,80C96,96,192,128,288,128C384,128,480,96,576,80C672,64,768,64,864,80C960,96,1056,128,1152,128C1248,128,1344,96,1392,80L1440,64L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
+      </svg>
+    );
+  }
+
+  if (type === 'slanted') {
+    return (
+      <svg viewBox="0 0 1440 120" preserveAspectRatio="none" style={style}>
+        <polygon points="0,120 1440,30 1440,120"></polygon>
+      </svg>
+    );
+  }
+
+  if (type === 'curved') {
+    return (
+      <svg viewBox="0 0 1440 120" preserveAspectRatio="none" style={style}>
+        <path d="M0,120 Q720,0 1440,120 Z"></path>
+      </svg>
+    );
+  }
+
+  return null;
+}
+
 
 function historySnapshot(state) {
   return {
@@ -467,6 +519,15 @@ function App() {
       }
       if (parsed.navbar && typeof parsed.navbar.enabled === 'undefined') {
         parsed.navbar = { ...parsed.navbar, enabled: false };
+      }
+      if (parsed.sections) {
+        parsed.sections = parsed.sections.map(sec => ({
+          dividerType: 'none',
+          dividerColor: '#ffffff',
+          dividerHeight: 80,
+          dividerPosition: 'none',
+          ...sec
+        }));
       }
       if (!parsed.bodyBgColor) parsed.bodyBgColor = '#f8fafc';
       if (parsed.bodyBgImage === undefined) parsed.bodyBgImage = '';
@@ -987,7 +1048,14 @@ function App() {
         onToggleSnap={() => setUiState(prev => ({ ...prev, snapToGrid: !prev.snapToGrid }))}
         onToggleGrid={() => setUiState(prev => ({ ...prev, showGrid: !prev.showGrid }))}
         onGridSize={gridSize => setUiState(prev => ({ ...prev, gridSize: Number(gridSize) }))}
-        onWebsiteStyle={websiteStyle => commitState(prev => ({ ...prev, websiteStyle }))}
+        onWebsiteStyle={websiteStyle => commitState(prev => {
+          let nextBg = prev.bodyBgColor;
+          if (websiteStyle === 'drawn') nextBg = '#f8fafc';
+          if (websiteStyle === 'drawn-dark') nextBg = '#1c2621';
+          if (websiteStyle === 'modern') nextBg = '#f8fbff';
+          if (websiteStyle === 'modern-dark') nextBg = '#030712';
+          return { ...prev, websiteStyle, bodyBgColor: nextBg };
+        })}
         onDevice={device => setUiState(prev => ({ ...prev, device }))}
         drawMode={state.drawMode}
         penColor={state.penColor}
@@ -1333,10 +1401,16 @@ function TopToolbar({
               </button>
               <hr className="menu-separator" />
               <button onClick={() => onWebsiteStyle('drawn')}>
-                {websiteStyle === 'drawn' ? "✓ Drawn Theme (Sketch)" : "Drawn Theme (Sketch)"}
+                {websiteStyle === 'drawn' ? "✓ Drawn Theme (Light)" : "Drawn Theme (Light)"}
+              </button>
+              <button onClick={() => onWebsiteStyle('drawn-dark')}>
+                {websiteStyle === 'drawn-dark' ? "✓ Chalkboard Theme (Dark)" : "Chalkboard Theme (Dark)"}
               </button>
               <button onClick={() => onWebsiteStyle('modern')}>
-                {websiteStyle === 'modern' ? "✓ Modern Theme (Clean)" : "Modern Theme (Clean)"}
+                {websiteStyle === 'modern' ? "✓ Modern Theme (Light)" : "Modern Theme (Light)"}
+              </button>
+              <button onClick={() => onWebsiteStyle('modern-dark')}>
+                {websiteStyle === 'modern-dark' ? "✓ Midnight Theme (Dark)" : "Midnight Theme (Dark)"}
               </button>
               <hr className="menu-separator" />
               <button onClick={() => onDevice('desktop')}>
@@ -2127,6 +2201,8 @@ function EditorSection({
 
   return (
     <main ref={sectionRef} className={`workspace ${editing ? 'drawing-mode' : ''}`} style={sectionStyle} onMouseDown={() => editing && onSelect(null)}>
+      <SectionDivider type={section.dividerType} position={section.dividerPosition === 'top' || section.dividerPosition === 'both' ? 'top' : 'none'} color={section.dividerColor} height={section.dividerHeight} />
+      <SectionDivider type={section.dividerType} position={section.dividerPosition === 'bottom' || section.dividerPosition === 'both' ? 'bottom' : 'none'} color={section.dividerColor} height={section.dividerHeight} />
       {editing && (
         <>
           <input
@@ -2460,6 +2536,52 @@ function EditorSection({
                   onChange={event => onUpdateSection(section.id, { parallax: event.target.checked })}
                 />
               </label>
+              <label>
+                Divider Type
+                <select
+                  value={section.dividerType || 'none'}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { dividerType: event.target.value })}
+                >
+                  <option value="none">None</option>
+                  <option value="waves">Waves</option>
+                  <option value="slanted">Slanted</option>
+                  <option value="curved">Curved</option>
+                </select>
+              </label>
+              <label>
+                Divider Position
+                <select
+                  value={section.dividerPosition || 'none'}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { dividerPosition: event.target.value })}
+                >
+                  <option value="none">None</option>
+                  <option value="top">Top</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="both">Both</option>
+                </select>
+              </label>
+              <label>
+                Divider Height
+                <input
+                  type="range"
+                  min="20"
+                  max="300"
+                  value={section.dividerHeight || 80}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { dividerHeight: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Divider Color
+                <input
+                  type="color"
+                  value={colorInputValue(section.dividerColor, '#ffffff')}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdateSection(section.id, { dividerColor: event.target.value })}
+                />
+              </label>
               <select
                 className="section-select-control"
                 value={section.backgroundGradient || ''}
@@ -2514,6 +2636,55 @@ function EditorSection({
 
 function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdate, onTextUpdate, onDelete, snapToGrid, gridSize }) {
   const ref = useRef(null);
+  const [tiltStyle, setTiltStyle] = useState({});
+
+  useEffect(() => {
+    if (editing) {
+      setTiltStyle({});
+    }
+  }, [editing]);
+
+  function handleMouseMove(e) {
+    if (editing || !ref.current) return;
+    if (item.hoverEffect === 'tilt') {
+      const rect = ref.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const xc = rect.width / 2;
+      const yc = rect.height / 2;
+      const maxTilt = 15;
+      const rotateY = ((x - xc) / xc) * maxTilt;
+      const rotateX = -((y - yc) / yc) * maxTilt;
+      setTiltStyle({
+        transform: `perspective(${item.perspective || 900}px) rotate(${item.rotation || 0}deg) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05) translateZ(${item.translateZ || 0}px)`,
+        transition: 'transform 0.05s ease',
+        transformStyle: 'preserve-3d',
+        zIndex: (item.zIndex || 1) + 10
+      });
+    } else if (item.hoverEffect === 'magnetic') {
+      const rect = ref.current.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      const pullX = (x / (rect.width / 2)) * 15;
+      const pullY = (y / (rect.height / 2)) * 15;
+      setTiltStyle({
+        transform: `perspective(${item.perspective || 900}px) rotate(${item.rotation || 0}deg) translate(${pullX}px, ${pullY}px) scale(1.03)`,
+        transition: 'transform 0.1s ease-out',
+        zIndex: (item.zIndex || 1) + 10
+      });
+    }
+  }
+
+  function handleMouseLeave() {
+    if (editing) return;
+    if (item.hoverEffect === 'tilt' || item.hoverEffect === 'magnetic') {
+      setTiltStyle({
+        transform: `perspective(${item.perspective || 900}px) rotate(${item.rotation || 0}deg) rotateX(${item.rotateX || 0}deg) rotateY(${item.rotateY || 0}deg) translateZ(${item.translateZ || 0}px) scale(${item.scale || 1}) skew(${item.skewX || 0}deg, ${item.skewY || 0}deg)`,
+        transition: 'transform 0.3s ease'
+      });
+    }
+  }
+
   const snap = value => snapToGrid ? Math.round(value / gridSize) * gridSize : value;
 
   function applyQuickLink(mode) {
@@ -2679,9 +2850,11 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
     <div
       ref={ref}
       className={`sandbox-element react-element ${item.type === 'image' ? 'section-image-block' : ''} ${selected ? 'selected' : ''} ${item.locked ? 'is-locked' : ''} anim-${item.animation || 'none'} hover-${item.hoverEffect || 'none'}`}
-      style={style}
+      style={{ ...style, ...tiltStyle }}
       data-type={item.type}
       onMouseDown={startDrag}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       onClick={event => {
         event.stopPropagation();
         if (!editing) openElementLink();
