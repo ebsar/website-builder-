@@ -1,0 +1,2594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grug Paint Navbar & Banner</title>
+    <!-- Google Fonts handwriting styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Cabin+Sketch:wght@400;700&family=Gochi+Hand&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- SVG Filters for Hand-Drawn Wiggle Effects -->
+    <svg style="position: absolute; width: 0; height: 0; pointer-events: none;">
+        <defs>
+            <filter id="paint-sketch">
+                <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+            <filter id="paint-sketch-hover">
+                <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Drawing Control Panel (visible only in drawing mode) -->
+    <div class="draw-controls" id="draw-controls">
+        <div class="controls-content">
+            <span class="grug-tip">✎ Sketch layouts, add sections, and customize boxes with text/photos!</span>
+            <div class="builder-group main-builder" aria-label="Website builder templates">
+                <span class="builder-label">Build</span>
+                <button id="btn-template-hero" class="builder-btn primary" title="Add a hero section">Hero</button>
+                <button id="btn-template-content" class="builder-btn" title="Add a content section">Content</button>
+                <button id="btn-template-gallery" class="builder-btn" title="Add an image gallery section">Gallery</button>
+                <button id="btn-template-cta" class="builder-btn" title="Add a call to action section">CTA</button>
+            </div>
+            <div class="builder-group publish-builder" aria-label="Page actions">
+                <span class="builder-label">Page</span>
+                <button id="btn-preview-toggle" class="builder-btn" title="Switch between editor and preview">Preview</button>
+                <button id="btn-export-html" class="builder-btn" title="Download this design as HTML">Export HTML</button>
+            </div>
+            <div class="control-group">
+                <!-- Colors -->
+                <div class="color-picker">
+                    <button class="color-btn active" data-color="#111111" style="background-color: #111111;" title="Black Ink"></button>
+                    <button class="color-btn" data-color="#007bff" style="background-color: #007bff;" title="Blue Ink"></button>
+                    <button class="color-btn" data-color="#ff3b30" style="background-color: #ff3b30;" title="Red Ink"></button>
+                    <button class="color-btn eraser-btn" data-color="eraser" style="background-color: #ffffff; border: 2px dashed #ff3b30; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;" title="Eraser">⌫</button>
+                </div>
+                <!-- Size -->
+                <div class="size-picker">
+                    <span class="size-label">Size:</span>
+                    <input type="range" id="pen-size" min="2" max="10" value="3">
+                </div>
+                <!-- Actions -->
+                <button id="btn-undo" class="control-btn-paint" title="Undo drawing">Undo ↩</button>
+                <button id="btn-add-section" class="control-btn-paint" title="Add new page section">Add Section ➕</button>
+                <button id="btn-clear" class="control-btn-paint" title="Clear all sketches and sections">Clear Sketches</button>
+                <button id="btn-save" class="control-btn-paint save" title="Save designs">Save Designs</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redraw floating action button (visible when drawing is saved) -->
+    <button id="btn-redraw" class="redraw-btn">✎ Redraw Design</button>
+
+    <!-- 1. NAVBAR HEADER (with its own independent canvas) -->
+    <header class="header drawing-mode" id="header-container">
+        <!-- Transparent Drawing Canvas Layer -->
+        <div class="canvas-container">
+            <canvas id="navbar-canvas"></canvas>
+        </div>
+
+        <!-- Container-specific Spawning Tools -->
+        <div class="container-tools">
+            <button class="tool-btn btn-add-sq" title="Add Square inside Navbar">+ Sq ⬜</button>
+            <button class="tool-btn btn-add-div" title="Add custom named Div inside Navbar">+ Div 🏷️</button>
+        </div>
+
+        <nav class="navbar" id="main-navbar">
+            <!-- Logo Section -->
+            <a href="#" class="logo" id="nav-logo">
+                <svg class="pen-icon" viewBox="0 0 100 100" width="36" height="36">
+                    <path d="M 22 78 Q 23 72 26 68 Q 24 66 22 64 Q 18 67 15 70 Z" fill="#111" stroke="#111" stroke-width="2" />
+                    <path d="M 26 68 L 68 26 C 71 23 75 27 72 30 L 30 72 Z" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M 33 61 L 43 71" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" />
+                    <path d="M 57 37 L 67 47" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" />
+                    <path d="M 15 70 Q 10 74 6 72 Q 4 80 12 82 Q 18 78 15 70" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                <span class="logo-text">Boost Bite</span>
+            </a>
+
+            <!-- Navigation Links -->
+            <div class="nav-menu">
+                <a href="#" class="nav-link" id="nav-home">
+                    <span>Home</span>
+                </a>
+                <a href="#" class="nav-link" id="nav-about">
+                    <span>About</span>
+                </a>
+                <a href="#" class="nav-link" id="nav-services">
+                    <span>Services</span>
+                </a>
+                <a href="#" class="nav-link" id="nav-blog">
+                    <span>Blog</span>
+                </a>
+            </div>
+
+            <!-- Contact Now Button -->
+            <div class="nav-actions">
+                <a href="#" class="contact-btn" id="nav-contact">
+                    <span>Contact Now</span>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 2. WEBSITE SECTIONS CONTAINER (Stacked page workspace sections) -->
+    <div id="sections-layout-container">
+        <!-- Stacked workspace sections will be generated dynamically here -->
+    </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            const headerContainer = document.getElementById('header-container');
+            const sectionsLayoutContainer = document.getElementById('sections-layout-container');
+            const controls = document.getElementById('draw-controls');
+            const btnRedraw = document.getElementById('btn-redraw');
+            const btnClear = document.getElementById('btn-clear');
+            const btnSave = document.getElementById('btn-save');
+            const penSize = document.getElementById('pen-size');
+            const colorButtons = document.querySelectorAll('.color-btn');
+
+            const btnUndo = document.getElementById('btn-undo');
+            const btnAddSection = document.getElementById('btn-add-section');
+            const btnTemplateHero = document.getElementById('btn-template-hero');
+            const btnTemplateContent = document.getElementById('btn-template-content');
+            const btnTemplateGallery = document.getElementById('btn-template-gallery');
+            const btnTemplateCta = document.getElementById('btn-template-cta');
+            const btnPreviewToggle = document.getElementById('btn-preview-toggle');
+            const btnExportHtml = document.getElementById('btn-export-html');
+
+            let activeColor = '#111111';
+            let activeSize = 3;
+
+            // Map of active canvases setup dynamically
+            const activeCanvases = {};
+
+            // Canvas drawing factory handler
+            function setupCanvas(canvas, storageKey, container) {
+                const ctx = canvas.getContext('2d');
+                let isDrawing = false;
+                let lastX = 0;
+                let lastY = 0;
+
+                // Undo history stack
+                let undoStack = [];
+
+                function saveUndoState() {
+                    const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    undoStack.push(snapshot);
+                    if (undoStack.length > 3) {
+                        undoStack.shift();
+                    }
+                }
+
+                canvas.undo = () => {
+                    if (undoStack.length > 0) {
+                        const previousState = undoStack.pop();
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.globalCompositeOperation = 'source-over';
+                        ctx.putImageData(previousState, 0, 0);
+                        canvas.save();
+                    }
+                };
+
+                // Adjust and redraw context when resizing
+                function resize() {
+                    const tempCanvas = document.createElement('canvas');
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCanvas.width = canvas.width;
+                    tempCanvas.height = canvas.height;
+                    tempCtx.drawImage(canvas, 0, 0);
+
+                    const rect = container.getBoundingClientRect();
+                    canvas.width = rect.width;
+                    canvas.height = rect.height;
+
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, canvas.width, canvas.height);
+                    
+                    loadSaved();
+                }
+
+                function getCoords(e) {
+                    const rect = canvas.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    return {
+                        x: clientX - rect.left,
+                        y: clientY - rect.top
+                    };
+                }
+
+                function startDrawing(e) {
+                    saveUndoState();
+                    isDrawing = true;
+                    const coords = getCoords(e);
+                    lastX = coords.x;
+                    lastY = coords.y;
+                }
+
+                function draw(e) {
+                    if (!isDrawing) return;
+                    const coords = getCoords(e);
+
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(coords.x, coords.y);
+                    if (activeColor === 'eraser') {
+                        ctx.globalCompositeOperation = 'destination-out';
+                    } else {
+                        ctx.globalCompositeOperation = 'source-over';
+                        ctx.strokeStyle = activeColor;
+                    }
+                    ctx.lineWidth = activeSize;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
+
+                    lastX = coords.x;
+                    lastY = coords.y;
+                }
+
+                // Attach drawing events
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', () => isDrawing = false);
+                canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+                canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startDrawing(e);
+                }, { passive: false });
+                canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    draw(e);
+                }, { passive: false });
+                canvas.addEventListener('touchend', () => isDrawing = false);
+
+                window.addEventListener('resize', resize);
+                
+                // Expose controller actions
+                canvas.save = () => {
+                    localStorage.setItem(storageKey, canvas.toDataURL());
+                };
+                
+                canvas.clear = () => {
+                    saveUndoState();
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                };
+
+                function loadSaved() {
+                    const saved = localStorage.getItem(storageKey);
+                    if (saved) {
+                        const img = new Image();
+                        img.onload = () => {
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.globalCompositeOperation = 'source-over';
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        };
+                        img.src = saved;
+                    }
+                }
+
+                // Scale canvas bounding and load image
+                setTimeout(() => {
+                    const rect = container.getBoundingClientRect();
+                    canvas.width = rect.width;
+                    canvas.height = rect.height;
+                    loadSaved();
+                }, 50);
+
+                activeCanvases[storageKey] = canvas;
+                return canvas;
+            }
+
+            // Save sections order and names layout to storage
+            function saveSections() {
+                const sections = [];
+                sectionsLayoutContainer.querySelectorAll('.workspace').forEach(sec => {
+                    sections.push({
+                        id: sec.id,
+                        name: sec.dataset.name
+                    });
+                });
+                localStorage.setItem('grug_workspace_sections', JSON.stringify(sections));
+            }
+
+            // Create a section container dynamically
+            function createSectionDOM(id, name) {
+                const sec = document.createElement('main');
+                sec.className = 'workspace';
+                if (headerContainer.classList.contains('drawing-mode')) {
+                    sec.classList.add('drawing-mode');
+                }
+                sec.id = id;
+                sec.dataset.name = name;
+
+                // Section title label
+                const label = document.createElement('div');
+                label.className = 'section-label';
+                label.textContent = name;
+                sec.appendChild(label);
+
+                // Section Canvas container layer
+                const canvasContainer = document.createElement('div');
+                canvasContainer.className = 'canvas-container';
+                const canvas = document.createElement('canvas');
+                canvas.id = `canvas_${id}`;
+                canvasContainer.appendChild(canvas);
+                sec.appendChild(canvasContainer);
+
+                // Inline Spawner Tools
+                const tools = document.createElement('div');
+                tools.className = 'container-tools';
+
+                const toolbarTitle = document.createElement('span');
+                toolbarTitle.className = 'section-toolbar-title';
+                toolbarTitle.textContent = `${name} builder`;
+                tools.appendChild(toolbarTitle);
+
+                const btnText = document.createElement('button');
+                btnText.className = 'tool-btn btn-add-text';
+                btnText.title = `Add text directly inside ${name}`;
+                btnText.textContent = 'Text';
+                btnText.addEventListener('click', () => {
+                    const elId = `el_${Date.now()}`;
+                    createElementDOM({
+                        id: elId,
+                        type: 'section-text',
+                        left: '120px',
+                        top: '90px',
+                        width: '280px',
+                        height: '74px',
+                        textItems: [{
+                            text: 'Section heading',
+                            textLeft: '10px',
+                            textTop: '10px',
+                            textWidth: '250px',
+                            textHeight: '48px',
+                            fontSize: 28,
+                            fontWeight: '700',
+                            fontColor: '#111111',
+                            fontFamily: "'Cabin Sketch', cursive"
+                        }]
+                    }, sec);
+                    saveAllElements();
+                });
+                tools.appendChild(btnText);
+
+                const btnSq = document.createElement('button');
+                btnSq.className = 'tool-btn btn-add-sq';
+                btnSq.title = `Add Square inside ${name}`;
+                btnSq.textContent = 'Box';
+                btnSq.textContent = '+ Sq ⬜';
+                btnSq.textContent = 'Box';
+                btnSq.addEventListener('click', () => {
+                    const elId = `el_${Date.now()}`;
+                    createElementDOM({
+                        id: elId,
+                        type: 'square',
+                        left: '100px',
+                        top: '50px',
+                        width: '120px',
+                        height: '120px'
+                    }, sec);
+                    saveAllElements();
+                });
+                tools.appendChild(btnSq);
+
+                const btnButton = document.createElement('button');
+                btnButton.className = 'tool-btn btn-add-button';
+                btnButton.title = `Add clickable button inside ${name}`;
+                btnButton.textContent = 'Button';
+                btnButton.addEventListener('click', () => {
+                    const elId = `el_${Date.now()}`;
+                    createElementDOM({
+                        id: elId,
+                        type: 'square',
+                        left: '140px',
+                        top: '120px',
+                        width: '180px',
+                        height: '58px',
+                        isButton: true,
+                        textItems: [{
+                            text: 'Button text',
+                            textLeft: '14px',
+                            textTop: '11px',
+                            textWidth: '150px',
+                            textHeight: '34px',
+                            fontSize: 22,
+                            fontWeight: '700'
+                        }]
+                    }, sec);
+                    saveAllElements();
+                });
+                tools.appendChild(btnButton);
+
+                const btnImage = document.createElement('button');
+                btnImage.className = 'tool-btn btn-add-image';
+                btnImage.title = `Insert image directly inside ${name}`;
+                btnImage.textContent = 'Image';
+                const sectionImageInput = document.createElement('input');
+                sectionImageInput.type = 'file';
+                sectionImageInput.accept = 'image/*';
+                sectionImageInput.style.display = 'none';
+                sectionImageInput.addEventListener('change', () => {
+                    const file = sectionImageInput.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const elId = `el_${Date.now()}`;
+                        createElementDOM({
+                            id: elId,
+                            type: 'section-image',
+                            left: '160px',
+                            top: '140px',
+                            width: '300px',
+                            height: '210px',
+                            mediaKind: file.type === 'image/gif' ? 'gif' : 'image',
+                            imageSrc: e.target.result,
+                            imageScale: '100',
+                            imageRotation: '0'
+                        }, sec);
+                        sectionImageInput.value = '';
+                        saveAllElements();
+                    };
+                    reader.readAsDataURL(file);
+                });
+                tools.appendChild(sectionImageInput);
+                btnImage.addEventListener('click', () => {
+                    sectionImageInput.click();
+                });
+                tools.appendChild(btnImage);
+
+                const btnGif = document.createElement('button');
+                btnGif.className = 'tool-btn btn-add-gif';
+                btnGif.title = `Add animated GIF or widget inside ${name}`;
+                btnGif.textContent = 'GIF';
+                btnGif.addEventListener('click', () => {
+                    const gifUrl = prompt('Paste GIF URL:', 'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif');
+                    if (!gifUrl || !gifUrl.trim()) return;
+
+                    const elId = `el_${Date.now()}`;
+                    createElementDOM({
+                        id: elId,
+                        type: 'square',
+                        left: '180px',
+                        top: '160px',
+                        width: '260px',
+                        height: '180px',
+                        mediaKind: 'gif',
+                        imageSrc: gifUrl.trim(),
+                        imageScale: '100'
+                    }, sec);
+                    saveAllElements();
+                });
+                tools.appendChild(btnGif);
+
+                const btnDiv = document.createElement('button');
+                btnDiv.className = 'tool-btn btn-add-div';
+                btnDiv.title = `Add Named Div inside ${name}`;
+                btnDiv.textContent = '+ Div 🏷️';
+                btnDiv.textContent = 'Custom';
+                btnDiv.addEventListener('click', () => {
+                    const divName = prompt(`What is the name of this custom div inside ${name}?`);
+                    if (divName && divName.trim() !== "") {
+                        const elId = `el_${Date.now()}`;
+                        createElementDOM({
+                            id: elId,
+                            type: 'custom',
+                            name: divName.trim(),
+                            left: '150px',
+                            top: '80px',
+                            width: '200px',
+                            height: '100px'
+                        }, sec);
+                        saveAllElements();
+                    }
+                });
+                tools.appendChild(btnDiv);
+
+                const btnDel = document.createElement('button');
+                btnDel.className = 'tool-btn btn-del-sec';
+                btnDel.title = `Delete ${name} section`;
+                btnDel.textContent = 'Delete Section 🗑️';
+                btnDel.textContent = 'Delete Section';
+                btnDel.addEventListener('click', () => {
+                    if (confirm(`Are you sure you want to delete the "${name}" section and all its contents?`)) {
+                        delete activeCanvases[`grug_drawing_${id}`];
+                        localStorage.removeItem(`grug_elements_${id}`);
+                        localStorage.removeItem(`grug_drawing_${id}`);
+                        sec.remove();
+                        saveSections();
+                        saveAllElements();
+                    }
+                });
+                tools.appendChild(btnDel);
+
+                sec.appendChild(tools);
+                sectionsLayoutContainer.appendChild(sec);
+
+                // Setup drawing canvas
+                setupCanvas(canvas, `grug_drawing_${id}`, sec);
+                return sec;
+            }
+
+            function loadSections() {
+                const saved = localStorage.getItem('grug_workspace_sections');
+                if (saved) {
+                    try {
+                        const sections = JSON.parse(saved);
+                        sections.forEach(secData => {
+                            createSectionDOM(secData.id, secData.name);
+                        });
+                    } catch(e) {
+                        console.error("Error loading sections", e);
+                    }
+                } else {
+                    // Default sections
+                    const defaultId = `sec_${Date.now()}`;
+                    createSectionDOM(defaultId, "banner");
+                    saveSections();
+                }
+            }
+
+            // Dynamic Custom Sandbox Elements logic
+            function saveAllElements() {
+                const headerElements = [];
+                headerContainer.querySelectorAll('.sandbox-element').forEach(el => {
+                    headerElements.push(serializeElementData(el));
+                });
+                localStorage.setItem('grug_elements_header', JSON.stringify(headerElements));
+
+                sectionsLayoutContainer.querySelectorAll('.workspace').forEach(sec => {
+                    const secElements = [];
+                    sec.querySelectorAll('.sandbox-element').forEach(el => {
+                        secElements.push(serializeElementData(el));
+                    });
+                    localStorage.setItem(`grug_elements_${sec.id}`, JSON.stringify(secElements));
+                });
+            }
+
+            function serializeElementData(el) {
+                const img = el.querySelector('.element-img');
+                const slider = el.querySelector('.image-scale-slider');
+                const textDivs = Array.from(el.querySelectorAll('.element-text-content'));
+                const textDiv = textDivs[0];
+                const canvas = el.querySelector('.element-canvas');
+                const textItems = textDivs.map(textEl => ({
+                    text: textEl.childNodes[0]?.textContent || textEl.textContent || '',
+                    fontFamily: textEl.style.fontFamily || '',
+                    fontSize: parseInt(textEl.style.fontSize) || 20,
+                    fontWeight: textEl.style.fontWeight || '400',
+                    fontColor: textEl.style.color || '#111111',
+                    textLeft: textEl.style.left || '15px',
+                    textTop: textEl.style.top || '15px',
+                    textWidth: textEl.style.width || '',
+                    textHeight: textEl.style.height || ''
+                }));
+                return {
+                    id: el.id,
+                    type: el.dataset.type,
+                    name: el.querySelector('.element-name')?.textContent || '',
+                    left: el.style.left,
+                    top: el.style.top,
+                    width: el.style.width,
+                    height: el.style.height,
+                    zIndex: el.style.zIndex || '',
+                    text: textDiv?.textContent || '',
+                    fontFamily: textDiv?.style.fontFamily || '',
+                    fontSize: textDiv ? parseInt(textDiv.style.fontSize) : '20',
+                    fontWeight: textDiv?.style.fontWeight || '400',
+                    fontColor: textDiv?.style.color || '#111111',
+                    textLeft: textDiv?.style.left || '15px',
+                    textTop: textDiv?.style.top || '15px',
+                    textWidth: textDiv?.style.width || '',
+                    textHeight: textDiv?.style.height || '',
+                    textItems,
+                    toolbarLeft: el.querySelector('.element-text-controls')?.style.left || '',
+                    toolbarTop: el.querySelector('.element-text-controls')?.style.top || '',
+                    isButton: el.dataset.isButton === 'true',
+                    buttonUrl: el.dataset.buttonUrl || '',
+                    mediaKind: el.dataset.mediaKind || '',
+                    cardAnimation: el.dataset.cardAnimation || '',
+                    imageSrc: img ? img.src : '',
+                    imageScale: slider ? slider.value : '30',
+                    imageRotation: img ? (img.dataset.rotation || '0') : '0',
+                    canvasData: canvas ? canvas.toDataURL() : ''
+                };
+            }
+
+            function createElementDOM(data, targetContainer) {
+                const el = document.createElement('div');
+                el.className = 'sandbox-element';
+                if (data.type === 'square') {
+                    el.classList.add('square');
+                } else if (data.type === 'section-text') {
+                    el.classList.add('section-text-block');
+                } else if (data.type === 'section-image') {
+                    el.classList.add('section-image-block');
+                } else {
+                    el.classList.add('custom-div');
+                }
+                el.id = data.id;
+                el.dataset.type = data.type;
+                el.dataset.isButton = data.isButton ? 'true' : 'false';
+                el.dataset.buttonUrl = data.buttonUrl || '';
+                el.dataset.mediaKind = data.mediaKind || '';
+                el.dataset.cardAnimation = data.cardAnimation || '';
+                if (data.cardAnimation) {
+                    el.classList.add(`anim-${data.cardAnimation}`);
+                }
+                if (data.isButton) {
+                    el.classList.add('button-block');
+                }
+                el.style.left = data.left || '100px';
+                el.style.top = data.top || '40px';
+                el.style.width = data.width || '120px';
+                el.style.height = data.height || '120px';
+                if (data.zIndex) {
+                    el.style.zIndex = data.zIndex;
+                }
+
+                if (data.type === 'custom' && data.name) {
+                    const label = document.createElement('span');
+                    label.className = 'element-name';
+                    label.textContent = data.name;
+                    el.appendChild(label);
+                }
+
+                // Create local canvas for drawing
+                const localCanvas = document.createElement('canvas');
+                localCanvas.className = 'element-canvas';
+                localCanvas.style.position = 'absolute';
+                localCanvas.style.top = '0';
+                localCanvas.style.left = '0';
+                localCanvas.style.width = '100%';
+                localCanvas.style.height = '100%';
+                localCanvas.style.zIndex = '8';
+                localCanvas.style.pointerEvents = 'none';
+                el.appendChild(localCanvas);
+
+                const localCtx = localCanvas.getContext('2d');
+                
+                // Parse initial dimensions
+                const initialWidth = parseInt(el.style.width) || 120;
+                const initialHeight = parseInt(el.style.height) || 120;
+                localCanvas.width = initialWidth;
+                localCanvas.height = initialHeight;
+
+                if (data.canvasData) {
+                    const img = new Image();
+                    img.onload = () => {
+                        localCtx.drawImage(img, 0, 0, localCanvas.width, localCanvas.height);
+                    };
+                    img.src = data.canvasData;
+                }
+
+                // Text Content Div
+                let textDiv = null;
+                function syncTextToolbar() {
+                    if (!textDiv || !fontSelect || !sizeSlider || !textWidthSlider || !colorInput) return;
+                    fontSelect.value = textDiv.style.fontFamily || fontSelect.value;
+                    sizeSlider.value = parseInt(textDiv.style.fontSize, 10) || 20;
+                    textWidthSlider.value = parseInt(textDiv.style.width, 10) || parseInt(textWidthSlider.min, 10);
+                    colorInput.value = textDiv.style.color || '#111111';
+                }
+
+                function setActiveText(nextTextDiv) {
+                    if (!nextTextDiv) return;
+                    if (textDiv) {
+                        textDiv.classList.remove('active-text-layer');
+                    }
+                    textDiv = nextTextDiv;
+                    textDiv.classList.add('active-text-layer');
+                    syncTextToolbar();
+                }
+
+                function createTextDiv(textData = {}) {
+                    const textLayer = document.createElement('div');
+                    textLayer.className = 'element-text-content';
+                    textLayer.contentEditable = "false";
+                    textLayer.textContent = textData.text || '';
+                    textLayer.style.left = textData.textLeft || data.textLeft || '15px';
+                    textLayer.style.top = textData.textTop || data.textTop || '15px';
+                    textLayer.style.width = textData.textWidth || data.textWidth || `${Math.min(220, Math.max(80, initialWidth - 30))}px`;
+                    textLayer.style.height = textData.textHeight || data.textHeight || '44px';
+
+                    // Apply layout attributes
+                    if (textData.fontFamily || data.fontFamily) {
+                        textLayer.style.fontFamily = textData.fontFamily || data.fontFamily;
+                    } else {
+                        textLayer.style.fontFamily = fontSelect ? fontSelect.value : "'Gochi Hand', cursive";
+                    }
+                    textLayer.style.fontSize = `${textData.fontSize || data.fontSize || 20}px`;
+                    textLayer.style.fontWeight = textData.fontWeight || data.fontWeight || '400';
+                    textLayer.style.color = textData.fontColor || data.fontColor || '#111111';
+
+                    textLayer.addEventListener('input', () => {
+                        setActiveText(textLayer);
+                        if (typeof el.clampTextPosition === 'function') {
+                            el.clampTextPosition();
+                        }
+                        saveAllElements();
+                    });
+                    
+                    textLayer.addEventListener('dblclick', (e) => {
+                        e.stopPropagation();
+                        setActiveText(textLayer);
+                        if (targetContainer.classList.contains('drawing-mode')) {
+                            enterEditing();
+                        }
+                    });
+
+                    const textResizeHandle = document.createElement('span');
+                    textResizeHandle.className = 'text-resize-handle';
+                    textResizeHandle.contentEditable = "false";
+                    textResizeHandle.title = "Resize text box";
+                    textLayer.appendChild(textResizeHandle);
+
+                    const textDeleteBtn = document.createElement('button');
+                    textDeleteBtn.type = 'button';
+                    textDeleteBtn.className = 'text-delete-btn';
+                    textDeleteBtn.contentEditable = "false";
+                    textDeleteBtn.title = "Delete this text";
+                    textDeleteBtn.textContent = '×';
+                    textLayer.appendChild(textDeleteBtn);
+                    
+                    el.appendChild(textLayer);
+                    bindTextLayerEvents(textLayer, textResizeHandle, textDeleteBtn);
+                    setActiveText(textLayer);
+                    return textLayer;
+                }
+
+                function removeTextLayer(textLayer) {
+                    const textLayers = Array.from(el.querySelectorAll('.element-text-content'));
+                    if (textLayers.length <= 1) {
+                        if (textLayer.childNodes[0] && textLayer.childNodes[0].nodeType === Node.TEXT_NODE) {
+                            textLayer.childNodes[0].nodeValue = '';
+                        } else {
+                            textLayer.insertBefore(document.createTextNode(''), textLayer.firstChild);
+                        }
+                        setActiveText(textLayer);
+                    } else {
+                        const nextText = textLayers.find(item => item !== textLayer);
+                        textLayer.remove();
+                        setActiveText(nextText);
+                    }
+                    saveAllElements();
+                }
+
+                // Typography and Edit Controls
+                let fontSelect, sizeSlider, textWidthSlider, colorInput, photoScaleSlider, photoRotationSlider;
+
+                // Hidden File Input (for photos)
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'image/*';
+                fileInput.style.display = 'none';
+
+                function removeImage() {
+                    el.querySelector('.element-image-wrapper')?.remove();
+                    if (photoScaleSlider) {
+                        photoScaleSlider.style.display = 'none';
+                    }
+                    if (typeof btnDeletePhoto !== 'undefined') {
+                        btnDeletePhoto.style.display = 'none';
+                    }
+                    saveAllElements();
+                }
+
+                function createImageWrapper(src, scale = '30', rotation = data.imageRotation || '0') {
+                    let imgWrapper = el.querySelector('.element-image-wrapper');
+                    if (!imgWrapper) {
+                        imgWrapper = document.createElement('div');
+                        imgWrapper.className = 'element-image-wrapper';
+                        el.appendChild(imgWrapper);
+                    }
+                    imgWrapper.innerHTML = '';
+
+                    const img = document.createElement('img');
+                    img.className = 'element-img';
+                    img.src = src;
+                    img.style.width = `${scale}%`;
+                    img.dataset.rotation = `${parseFloat(rotation) || 0}`;
+                    img.style.transform = `rotate(${img.dataset.rotation}deg)`;
+                    imgWrapper.appendChild(img);
+
+                    const resizeHandle = document.createElement('span');
+                    resizeHandle.className = 'image-transform-handle image-resize-handle';
+                    resizeHandle.title = 'Resize image';
+                    imgWrapper.appendChild(resizeHandle);
+
+                    const rotateHandle = document.createElement('span');
+                    rotateHandle.className = 'image-transform-handle image-rotate-handle';
+                    rotateHandle.title = 'Rotate image';
+                    imgWrapper.appendChild(rotateHandle);
+
+                    const btnDeleteImage = document.createElement('button');
+                    btnDeleteImage.type = 'button';
+                    btnDeleteImage.className = 'image-delete-btn';
+                    btnDeleteImage.title = 'Delete this photo';
+                    btnDeleteImage.textContent = '×';
+                    btnDeleteImage.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        removeImage();
+                    });
+                    imgWrapper.appendChild(btnDeleteImage);
+
+                    if (photoScaleSlider) {
+                        photoScaleSlider.style.display = 'block';
+                    }
+                    bindImageTransformEvents(imgWrapper, img, resizeHandle, rotateHandle);
+                    return imgWrapper;
+                }
+
+                fileInput.addEventListener('change', () => {
+                    const file = fileInput.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            el.dataset.mediaKind = file.type === 'image/gif' ? 'gif' : 'image';
+                            createImageWrapper(e.target.result, photoScaleSlider.value, '0');
+                            btnDeletePhoto.style.display = 'inline-flex';
+                            saveAllElements();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                el.appendChild(fileInput);
+
+                // Add image if already exists
+                if (data.imageSrc && data.imageSrc !== '') {
+                    createImageWrapper(data.imageSrc, data.imageScale || 30, data.imageRotation || '0');
+                }
+
+                // Always create text layer(s). Older saves only have the single legacy text fields.
+                if (Array.isArray(data.textItems) && data.textItems.length > 0) {
+                    data.textItems.forEach(item => createTextDiv(item));
+                } else if (data.text) {
+                    createTextDiv({ text: data.text || '' });
+                }
+
+                // Create floating settings toolbar
+                const textControls = document.createElement('div');
+                textControls.className = 'element-text-controls';
+                if (data.toolbarLeft || data.toolbarTop) {
+                    textControls.style.left = data.toolbarLeft || '0px';
+                    textControls.style.top = data.toolbarTop || '-38px';
+                    textControls.style.right = 'auto';
+                }
+
+                const toolbarDragHandle = document.createElement('button');
+                toolbarDragHandle.type = 'button';
+                toolbarDragHandle.className = 'toolbar-drag-handle';
+                toolbarDragHandle.title = 'Move toolbar';
+                toolbarDragHandle.textContent = '↕';
+                textControls.appendChild(toolbarDragHandle);
+                toolbarDragHandle.textContent = 'Move';
+
+                function createToolbarLabel(text) {
+                    const label = document.createElement('span');
+                    label.className = 'toolbar-label';
+                    label.textContent = text;
+                    return label;
+                }
+
+                // Mode Tabs (Draw, Text, Photo)
+                const modeTabs = document.createElement('div');
+                modeTabs.className = 'el-mode-tabs';
+                modeTabs.style.display = 'flex';
+                modeTabs.style.gap = '4px';
+                modeTabs.style.borderRight = '2px solid #111111';
+                modeTabs.style.paddingRight = '8px';
+
+                const btnModeDraw = document.createElement('button');
+                btnModeDraw.className = 'el-ctrl-btn';
+                btnModeDraw.textContent = 'Draw';
+                btnModeDraw.title = 'Draw inside the card';
+
+                const btnModeText = document.createElement('button');
+                btnModeText.className = 'el-ctrl-btn';
+                btnModeText.textContent = 'Text';
+                btnModeText.title = 'Add text';
+
+                const btnModePhoto = document.createElement('button');
+                btnModePhoto.className = 'el-ctrl-btn';
+                btnModePhoto.textContent = 'Photo';
+                btnModePhoto.title = 'Add photo';
+
+                const btnModeAction = document.createElement('button');
+                btnModeAction.className = 'el-ctrl-btn';
+                btnModeAction.textContent = 'Button';
+                btnModeAction.title = 'Make this block a button or link';
+
+                const btnModeAnimate = document.createElement('button');
+                btnModeAnimate.className = 'el-ctrl-btn';
+                btnModeAnimate.textContent = 'Animate';
+                btnModeAnimate.title = 'Add animation to this card';
+
+                modeTabs.appendChild(btnModeDraw);
+                modeTabs.appendChild(btnModeText);
+                modeTabs.appendChild(btnModePhoto);
+                modeTabs.appendChild(btnModeAction);
+                modeTabs.appendChild(btnModeAnimate);
+                textControls.appendChild(modeTabs);
+
+                // 1. Draw sub-panel
+                const drawSubPanel = document.createElement('div');
+                drawSubPanel.className = 'el-sub-panel el-draw-panel';
+                drawSubPanel.style.display = 'none';
+                drawSubPanel.style.alignItems = 'center';
+                drawSubPanel.style.gap = '8px';
+                drawSubPanel.appendChild(createToolbarLabel('Draw'));
+
+                const drawColorSelect = document.createElement('div');
+                drawColorSelect.className = 'el-draw-colors';
+                drawColorSelect.style.display = 'flex';
+                drawColorSelect.style.gap = '4px';
+
+                let cardActiveColor = '#111111';
+                let cardActiveSize = 3;
+
+                const drawColors = [
+                    { color: '#111111', name: 'Black' },
+                    { color: '#007bff', name: 'Blue' },
+                    { color: '#ff3b30', name: 'Red' },
+                    { color: 'eraser', name: 'Eraser' }
+                ];
+
+                const drawColorBtns = [];
+                drawColors.forEach(dc => {
+                    const cbtn = document.createElement('button');
+                    cbtn.className = 'color-btn';
+                    if (dc.color === 'eraser') {
+                        cbtn.className = 'color-btn eraser-btn';
+                        cbtn.textContent = '⌫';
+                        cbtn.style.backgroundColor = '#ffffff';
+                        cbtn.style.border = '2px dashed #ff3b30';
+                        cbtn.style.width = '20px';
+                        cbtn.style.height = '20px';
+                    } else {
+                        cbtn.style.backgroundColor = dc.color;
+                        cbtn.style.width = '20px';
+                        cbtn.style.height = '20px';
+                    }
+                    cbtn.title = dc.name;
+                    cbtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        cardActiveColor = dc.color;
+                        drawColorBtns.forEach(b => b.classList.remove('active'));
+                        cbtn.classList.add('active');
+                    });
+                    drawColorSelect.appendChild(cbtn);
+                    drawColorBtns.push(cbtn);
+                });
+                drawColorBtns[0].classList.add('active'); // default black
+
+                const drawSizeSlider = document.createElement('input');
+                drawSizeSlider.type = 'range';
+                drawSizeSlider.className = 'el-font-size-slider';
+                drawSizeSlider.title = "Adjust Pen Size";
+                drawSizeSlider.min = '2';
+                drawSizeSlider.max = '10';
+                drawSizeSlider.value = '3';
+                drawSizeSlider.style.width = '50px';
+                drawSizeSlider.addEventListener('input', () => {
+                    cardActiveSize = drawSizeSlider.value;
+                });
+
+                drawSubPanel.appendChild(drawColorSelect);
+                drawSubPanel.appendChild(drawSizeSlider);
+                textControls.appendChild(drawSubPanel);
+
+                // 2. Text sub-panel
+                const textSubPanel = document.createElement('div');
+                textSubPanel.className = 'el-sub-panel el-text-panel';
+                textSubPanel.style.display = 'none';
+                textSubPanel.style.alignItems = 'center';
+                textSubPanel.style.gap = '8px';
+                textSubPanel.appendChild(createToolbarLabel('Text'));
+
+                const btnAddTextLayer = document.createElement('button');
+                btnAddTextLayer.className = 'el-ctrl-btn';
+                btnAddTextLayer.title = "Add another text input";
+                btnAddTextLayer.textContent = '+ Text';
+                btnAddTextLayer.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const count = el.querySelectorAll('.element-text-content').length;
+                    const nextOffset = 15 + (count * 18);
+                    const newText = createTextDiv({
+                        text: 'New text',
+                        textLeft: `${Math.min(nextOffset, Math.max(0, el.clientWidth - 90))}px`,
+                        textTop: `${Math.min(nextOffset, Math.max(0, el.clientHeight - 36))}px`,
+                        textWidth: `${Math.min(160, Math.max(80, el.clientWidth - 30))}px`,
+                        textHeight: '44px',
+                        fontFamily: fontSelect.value,
+                        fontSize: parseInt(sizeSlider.value, 10) || 20,
+                        fontWeight: textDiv?.style.fontWeight || '400',
+                        fontColor: colorInput.value
+                    });
+                    setMode('text');
+                    setActiveText(newText);
+                    newText.contentEditable = "true";
+                    newText.focus();
+                    saveAllElements();
+                });
+
+                fontSelect = document.createElement('select');
+                fontSelect.className = 'el-font-select';
+                fontSelect.title = "Select Font Family";
+                const fonts = [
+                    { name: 'Gochi Hand', value: "'Gochi Hand', cursive" },
+                    { name: 'Cabin Sketch', value: "'Cabin Sketch', cursive" },
+                    { name: 'Architects Daughter', value: "'Architects Daughter', cursive" }
+                ];
+                fonts.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.textContent = f.name;
+                    opt.value = f.value;
+                    if (data.fontFamily && (data.fontFamily.includes(f.name) || data.fontFamily === f.value)) {
+                        opt.selected = true;
+                    }
+                    fontSelect.appendChild(opt);
+                });
+                fontSelect.addEventListener('change', () => {
+                    if (textDiv) textDiv.style.fontFamily = fontSelect.value;
+                    if (typeof el.clampTextPosition === 'function') {
+                        el.clampTextPosition();
+                    }
+                    saveAllElements();
+                });
+
+                sizeSlider = document.createElement('input');
+                sizeSlider.type = 'range';
+                sizeSlider.className = 'el-font-size-slider';
+                sizeSlider.title = "Adjust Font Size";
+                sizeSlider.min = '12';
+                sizeSlider.max = '64';
+                sizeSlider.value = data.fontSize || '20';
+                sizeSlider.addEventListener('input', () => {
+                    if (textDiv) textDiv.style.fontSize = `${sizeSlider.value}px`;
+                    if (typeof el.clampTextPosition === 'function') {
+                        el.clampTextPosition();
+                    }
+                    saveAllElements();
+                });
+
+                const btnSizeDown = document.createElement('button');
+                btnSizeDown.className = 'el-ctrl-btn';
+                btnSizeDown.title = "Make text smaller";
+                btnSizeDown.textContent = 'A-';
+                btnSizeDown.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sizeSlider.value = Math.max(parseInt(sizeSlider.min, 10), parseInt(sizeSlider.value, 10) - 2);
+                    sizeSlider.dispatchEvent(new Event('input'));
+                });
+
+                const btnSizeUp = document.createElement('button');
+                btnSizeUp.className = 'el-ctrl-btn';
+                btnSizeUp.title = "Make text larger";
+                btnSizeUp.textContent = 'A+';
+                btnSizeUp.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sizeSlider.value = Math.min(parseInt(sizeSlider.max, 10), parseInt(sizeSlider.value, 10) + 2);
+                    sizeSlider.dispatchEvent(new Event('input'));
+                });
+
+                const btnLighter = document.createElement('button');
+                btnLighter.className = 'el-ctrl-btn';
+                btnLighter.title = "Make font lighter";
+                btnLighter.textContent = 'Light';
+                btnLighter.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const currentWeight = parseInt(textDiv.style.fontWeight, 10) || 400;
+                    textDiv.style.fontWeight = `${Math.max(100, currentWeight - 100)}`;
+                    saveAllElements();
+                });
+
+                const btnBolder = document.createElement('button');
+                btnBolder.className = 'el-ctrl-btn';
+                btnBolder.title = "Make font bolder";
+                btnBolder.textContent = 'Bold';
+                btnBolder.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const currentWeight = parseInt(textDiv.style.fontWeight, 10) || 400;
+                    textDiv.style.fontWeight = `${Math.min(900, currentWeight + 100)}`;
+                    saveAllElements();
+                });
+
+                textWidthSlider = document.createElement('input');
+                textWidthSlider.type = 'range';
+                textWidthSlider.className = 'el-font-size-slider text-width-slider';
+                textWidthSlider.title = "Resize text box";
+                textWidthSlider.min = '42';
+                textWidthSlider.max = `${Math.max(42, initialWidth - 8)}`;
+                textWidthSlider.value = `${Math.min(parseInt(textWidthSlider.max, 10), parseInt(data.textWidth, 10) || Math.min(220, Math.max(80, initialWidth - 30)))}`;
+                textWidthSlider.addEventListener('input', () => {
+                    if (textDiv) {
+                        textDiv.style.width = `${textWidthSlider.value}px`;
+                    }
+                    if (typeof el.clampTextPosition === 'function') {
+                        el.clampTextPosition();
+                    }
+                    saveAllElements();
+                });
+
+                colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.className = 'el-color-input';
+                colorInput.title = "Choose Text Color";
+                colorInput.value = data.fontColor || '#111111';
+                colorInput.addEventListener('input', () => {
+                    if (textDiv) textDiv.style.color = colorInput.value;
+                    saveAllElements();
+                });
+
+                textSubPanel.appendChild(btnAddTextLayer);
+                textSubPanel.appendChild(fontSelect);
+                textSubPanel.appendChild(btnSizeDown);
+                textSubPanel.appendChild(sizeSlider);
+                textSubPanel.appendChild(btnSizeUp);
+                textSubPanel.appendChild(btnLighter);
+                textSubPanel.appendChild(btnBolder);
+                textSubPanel.appendChild(textWidthSlider);
+                textSubPanel.appendChild(colorInput);
+                textControls.appendChild(textSubPanel);
+
+                // 3. Photo sub-panel
+                const photoSubPanel = document.createElement('div');
+                photoSubPanel.className = 'el-sub-panel el-photo-panel';
+                photoSubPanel.style.display = 'none';
+                photoSubPanel.style.alignItems = 'center';
+                photoSubPanel.style.gap = '8px';
+                photoSubPanel.appendChild(createToolbarLabel('Photo'));
+
+                const btnUploadPhoto = document.createElement('button');
+                btnUploadPhoto.className = 'el-ctrl-btn';
+                btnUploadPhoto.textContent = 'Add Photo';
+                btnUploadPhoto.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+
+                const btnGifUrl = document.createElement('button');
+                btnGifUrl.className = 'el-ctrl-btn';
+                btnGifUrl.title = 'Add animated GIF by URL';
+                btnGifUrl.textContent = 'GIF URL';
+                btnGifUrl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const gifUrl = prompt('Paste GIF URL:', el.querySelector('.element-img')?.src || 'https://');
+                    if (gifUrl && gifUrl.trim()) {
+                        el.dataset.mediaKind = 'gif';
+                        createImageWrapper(gifUrl.trim(), '100', '0');
+                        photoScaleSlider.value = '100';
+                        btnDeletePhoto.style.display = 'inline-flex';
+                        saveAllElements();
+                    }
+                });
+
+                const btnDeletePhoto = document.createElement('button');
+                btnDeletePhoto.className = 'el-ctrl-btn';
+                btnDeletePhoto.title = 'Delete photo';
+                btnDeletePhoto.textContent = 'Remove';
+                btnDeletePhoto.style.color = '#ff3b30';
+                btnDeletePhoto.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeImage();
+                });
+
+                photoScaleSlider = document.createElement('input');
+                photoScaleSlider.type = 'range';
+                photoScaleSlider.className = 'el-font-size-slider image-scale-slider';
+                photoScaleSlider.title = "Adjust Photo Scale";
+                photoScaleSlider.min = '10';
+                photoScaleSlider.max = '100';
+                photoScaleSlider.value = data.imageScale || '30';
+                photoScaleSlider.style.width = '60px';
+                photoScaleSlider.style.display = data.imageSrc ? 'block' : 'none';
+                photoScaleSlider.addEventListener('input', () => {
+                    const img = el.querySelector('.element-img');
+                    if (img) {
+                        img.style.width = `${photoScaleSlider.value}%`;
+                        img.style.transform = `rotate(${img.dataset.rotation || 0}deg)`;
+                    }
+                    saveAllElements();
+                });
+
+                function setImageRotation(rotation) {
+                    const img = el.querySelector('.element-img');
+                    if (!img) return;
+
+                    const normalizedRotation = Math.max(-180, Math.min(180, Math.round(rotation)));
+                    img.dataset.rotation = `${normalizedRotation}`;
+                    img.style.transform = `rotate(${normalizedRotation}deg)`;
+                    if (photoRotationSlider) {
+                        photoRotationSlider.value = `${normalizedRotation}`;
+                    }
+                    saveAllElements();
+                }
+
+                const btnRotateLeft = document.createElement('button');
+                btnRotateLeft.className = 'el-ctrl-btn';
+                btnRotateLeft.title = 'Rotate image left';
+                btnRotateLeft.textContent = 'Rotate -';
+                btnRotateLeft.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const img = el.querySelector('.element-img');
+                    setImageRotation((parseFloat(img?.dataset.rotation || '0') || 0) - 15);
+                });
+
+                photoRotationSlider = document.createElement('input');
+                photoRotationSlider.type = 'range';
+                photoRotationSlider.className = 'el-font-size-slider image-rotation-slider';
+                photoRotationSlider.title = 'Rotate image';
+                photoRotationSlider.min = '-180';
+                photoRotationSlider.max = '180';
+                photoRotationSlider.value = data.imageRotation || '0';
+                photoRotationSlider.style.width = '86px';
+                photoRotationSlider.addEventListener('input', () => {
+                    setImageRotation(parseFloat(photoRotationSlider.value) || 0);
+                });
+
+                const btnRotateRight = document.createElement('button');
+                btnRotateRight.className = 'el-ctrl-btn';
+                btnRotateRight.title = 'Rotate image right';
+                btnRotateRight.textContent = 'Rotate +';
+                btnRotateRight.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const img = el.querySelector('.element-img');
+                    setImageRotation((parseFloat(img?.dataset.rotation || '0') || 0) + 15);
+                });
+
+                const btnResetRotation = document.createElement('button');
+                btnResetRotation.className = 'el-ctrl-btn';
+                btnResetRotation.title = 'Reset image rotation';
+                btnResetRotation.textContent = 'Reset Angle';
+                btnResetRotation.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setImageRotation(0);
+                });
+
+
+                photoSubPanel.appendChild(btnUploadPhoto);
+                photoSubPanel.appendChild(btnGifUrl);
+                photoSubPanel.appendChild(btnDeletePhoto);
+                photoSubPanel.appendChild(photoScaleSlider);
+                photoSubPanel.appendChild(btnRotateLeft);
+                photoSubPanel.appendChild(photoRotationSlider);
+                photoSubPanel.appendChild(btnRotateRight);
+                photoSubPanel.appendChild(btnResetRotation);
+                textControls.appendChild(photoSubPanel);
+
+                // 4. Action / button sub-panel
+                const actionSubPanel = document.createElement('div');
+                actionSubPanel.className = 'el-sub-panel el-action-panel';
+                actionSubPanel.style.display = 'none';
+                actionSubPanel.style.alignItems = 'center';
+                actionSubPanel.style.gap = '8px';
+                actionSubPanel.appendChild(createToolbarLabel('Button'));
+
+                const btnToggleButton = document.createElement('button');
+                btnToggleButton.className = 'el-ctrl-btn';
+                btnToggleButton.title = 'Make this square clickable without changing its design';
+                btnToggleButton.textContent = el.dataset.isButton === 'true' ? 'Not Clickable' : 'Make Clickable';
+
+                function setButtonMode(enabled) {
+                    el.dataset.isButton = enabled ? 'true' : 'false';
+                    el.classList.toggle('button-block', enabled);
+                    btnToggleButton.textContent = enabled ? 'Not Clickable' : 'Make Clickable';
+                    saveAllElements();
+                }
+
+                btnToggleButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setButtonMode(el.dataset.isButton !== 'true');
+                });
+
+                const btnSetLink = document.createElement('button');
+                btnSetLink.className = 'el-ctrl-btn';
+                btnSetLink.title = 'Set button/link URL';
+                btnSetLink.textContent = 'Set Link';
+                btnSetLink.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const nextUrl = prompt('Enter button link URL:', el.dataset.buttonUrl || 'https://');
+                    if (nextUrl !== null) {
+                        el.dataset.buttonUrl = nextUrl.trim();
+                        if (el.dataset.buttonUrl) {
+                            setButtonMode(true);
+                        } else {
+                            saveAllElements();
+                        }
+                    }
+                });
+
+                const btnClearAction = document.createElement('button');
+                btnClearAction.className = 'el-ctrl-btn';
+                btnClearAction.title = 'Remove button/link styling';
+                btnClearAction.textContent = 'Reset';
+                btnClearAction.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    el.dataset.buttonUrl = '';
+                    setButtonMode(false);
+                });
+
+                actionSubPanel.appendChild(btnToggleButton);
+                actionSubPanel.appendChild(btnSetLink);
+                actionSubPanel.appendChild(btnClearAction);
+                textControls.appendChild(actionSubPanel);
+
+                // 5. Animation sub-panel
+                const animateSubPanel = document.createElement('div');
+                animateSubPanel.className = 'el-sub-panel el-animate-panel';
+                animateSubPanel.style.display = 'none';
+                animateSubPanel.style.alignItems = 'center';
+                animateSubPanel.style.gap = '8px';
+                animateSubPanel.appendChild(createToolbarLabel('Animate'));
+
+                function setCardAnimation(animationName) {
+                    el.classList.remove('anim-draw-in', 'anim-shake');
+                    el.dataset.cardAnimation = animationName || '';
+                    if (animationName) {
+                        el.classList.add(`anim-${animationName}`);
+                    }
+                    saveAllElements();
+                }
+
+                const btnAnimDraw = document.createElement('button');
+                btnAnimDraw.className = 'el-ctrl-btn';
+                btnAnimDraw.title = 'Animate like the card is being drawn';
+                btnAnimDraw.textContent = 'Draw In';
+                btnAnimDraw.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setCardAnimation('draw-in');
+                });
+
+                const btnAnimShake = document.createElement('button');
+                btnAnimShake.className = 'el-ctrl-btn';
+                btnAnimShake.title = 'Add a shaking animation';
+                btnAnimShake.textContent = 'Shake';
+                btnAnimShake.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setCardAnimation('shake');
+                });
+
+                const btnAnimNone = document.createElement('button');
+                btnAnimNone.className = 'el-ctrl-btn';
+                btnAnimNone.title = 'Remove card animation';
+                btnAnimNone.textContent = 'None';
+                btnAnimNone.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setCardAnimation('');
+                });
+
+                animateSubPanel.appendChild(btnAnimDraw);
+                animateSubPanel.appendChild(btnAnimShake);
+                animateSubPanel.appendChild(btnAnimNone);
+                textControls.appendChild(animateSubPanel);
+
+                // Global actions (Delete, Done)
+                const globalActions = document.createElement('div');
+                globalActions.className = 'el-global-actions';
+                globalActions.style.display = 'flex';
+                globalActions.style.gap = '4px';
+                globalActions.style.borderLeft = '2px solid #111111';
+                globalActions.style.paddingLeft = '8px';
+
+                const btnDuplicate = document.createElement('button');
+                btnDuplicate.className = 'el-ctrl-btn';
+                btnDuplicate.title = 'Duplicate block';
+                btnDuplicate.textContent = 'Copy';
+                btnDuplicate.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const copyData = serializeElementData(el);
+                    copyData.id = `el_${Date.now()}`;
+                    copyData.left = `${(parseInt(el.style.left, 10) || 0) + 24}px`;
+                    copyData.top = `${(parseInt(el.style.top, 10) || 0) + 24}px`;
+                    createElementDOM(copyData, targetContainer);
+                    saveAllElements();
+                });
+
+                const btnBack = document.createElement('button');
+                btnBack.className = 'el-ctrl-btn';
+                btnBack.title = 'Send backward';
+                btnBack.textContent = 'Layer -';
+                btnBack.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    el.style.zIndex = `${Math.max(11, (parseInt(el.style.zIndex || '15', 10) || 15) - 1)}`;
+                    saveAllElements();
+                });
+
+                const btnFront = document.createElement('button');
+                btnFront.className = 'el-ctrl-btn';
+                btnFront.title = 'Bring forward';
+                btnFront.textContent = 'Layer +';
+                btnFront.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    el.style.zIndex = `${(parseInt(el.style.zIndex || '15', 10) || 15) + 1}`;
+                    saveAllElements();
+                });
+
+                const btnDel = document.createElement('button');
+                btnDel.className = 'el-ctrl-btn';
+                btnDel.title = "Delete block";
+                btnDel.textContent = 'Delete Card';
+                btnDel.style.color = '#ff3b30';
+                btnDel.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    el.remove();
+                    saveAllElements();
+                });
+
+                const btnDone = document.createElement('button');
+                btnDone.className = 'el-ctrl-btn el-btn-done';
+                btnDone.title = "Done editing settings";
+                btnDone.textContent = 'Done';
+                btnDone.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    exitEditing();
+                });
+
+                globalActions.appendChild(btnDuplicate);
+                globalActions.appendChild(btnBack);
+                globalActions.appendChild(btnFront);
+                globalActions.appendChild(btnDel);
+                globalActions.appendChild(btnDone);
+                textControls.appendChild(globalActions);
+
+                el.appendChild(textControls);
+
+                // Setup tabs functionality
+                let currentMode = 'select';
+                function setMode(mode) {
+                    currentMode = mode;
+                    btnModeDraw.classList.remove('active-tab');
+                    btnModeText.classList.remove('active-tab');
+                    btnModePhoto.classList.remove('active-tab');
+                    btnModeAction.classList.remove('active-tab');
+                    btnModeAnimate.classList.remove('active-tab');
+                    el.removeAttribute('data-placing-text');
+
+                    drawSubPanel.style.display = 'none';
+                    textSubPanel.style.display = 'none';
+                    photoSubPanel.style.display = 'none';
+                    actionSubPanel.style.display = 'none';
+                    animateSubPanel.style.display = 'none';
+
+                    localCanvas.style.pointerEvents = 'none';
+                    el.querySelectorAll('.element-text-content').forEach(textLayer => {
+                        textLayer.style.pointerEvents = 'none';
+                        textLayer.contentEditable = "false";
+                    });
+
+                    if (mode === 'draw') {
+                        btnModeDraw.classList.add('active-tab');
+                        drawSubPanel.style.display = 'flex';
+                        localCanvas.style.pointerEvents = 'auto';
+                    } else if (mode === 'text') {
+                        btnModeText.classList.add('active-tab');
+                        textSubPanel.style.display = 'flex';
+                        el.setAttribute('data-placing-text', 'true');
+                        if (textDiv) {
+                            if (typeof el.clampTextPosition === 'function') {
+                                el.clampTextPosition();
+                            }
+                            el.querySelectorAll('.element-text-content').forEach(textLayer => {
+                                textLayer.style.pointerEvents = 'auto';
+                                textLayer.contentEditable = textLayer === textDiv ? "true" : "false";
+                            });
+                            textDiv.focus();
+                        }
+                    } else if (mode === 'photo') {
+                        btnModePhoto.classList.add('active-tab');
+                        photoSubPanel.style.display = 'flex';
+                        const img = el.querySelector('.element-img');
+                        photoScaleSlider.style.display = img ? 'block' : 'none';
+                        btnDeletePhoto.style.display = img ? 'inline-flex' : 'none';
+                    } else if (mode === 'action') {
+                        btnModeAction.classList.add('active-tab');
+                        actionSubPanel.style.display = 'flex';
+                    } else if (mode === 'animate') {
+                        btnModeAnimate.classList.add('active-tab');
+                        animateSubPanel.style.display = 'flex';
+                    }
+                }
+
+                btnModeDraw.addEventListener('click', (e) => { e.stopPropagation(); setMode('draw'); });
+                btnModeText.addEventListener('click', (e) => { e.stopPropagation(); setMode('text'); });
+                btnModePhoto.addEventListener('click', (e) => { e.stopPropagation(); setMode('photo'); });
+                btnModeAction.addEventListener('click', (e) => { e.stopPropagation(); setMode('action'); });
+                btnModeAnimate.addEventListener('click', (e) => { e.stopPropagation(); setMode('animate'); });
+
+                // Toolbar can be moved out of the way while editing a block.
+                let isMovingToolbar = false;
+                let toolbarStartX = 0;
+                let toolbarStartY = 0;
+                let toolbarStartLeft = 0;
+                let toolbarStartTop = 0;
+
+                // Let the text itself be positioned anywhere inside the block while editing.
+                let isMovingText = false;
+                let pendingTextMove = false;
+                let suppressTextClick = false;
+                let textMoveStartX = 0;
+                let textMoveStartY = 0;
+                let textStartLeft = 0;
+                let textStartTop = 0;
+                let isResizingText = false;
+                let textResizeStartX = 0;
+                let textResizeStartY = 0;
+                let textStartWidth = 0;
+                let textStartHeight = 0;
+                let activeImageTransform = null;
+                let imageStartX = 0;
+                let imageStartScale = 30;
+                let imageRotateCenter = null;
+                let imageStartAngle = 0;
+                let imageStartRotation = 0;
+
+                function getPointerPosition(e) {
+                    const point = e.touches ? e.touches[0] : e;
+                    return {
+                        x: point.clientX,
+                        y: point.clientY
+                    };
+                }
+
+                function placeTextFromClick(e) {
+                    if (el.getAttribute('data-editing-text') !== 'true' || currentMode !== 'text') return;
+                    if (
+                        e.target.closest('.element-text-controls') ||
+                        e.target.closest('.element-text-content') ||
+                        e.target.closest('.text-resize-handle') ||
+                        e.target.closest('.text-delete-btn')
+                    ) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const rect = el.getBoundingClientRect();
+                    const x = Math.max(0, Math.min(e.clientX - rect.left, el.clientWidth - 120));
+                    const y = Math.max(0, Math.min(e.clientY - rect.top, el.clientHeight - 44));
+                    const nextText = createTextDiv({
+                        text: '',
+                        textLeft: `${x}px`,
+                        textTop: `${y}px`,
+                        textWidth: `${Math.min(180, Math.max(100, el.clientWidth - x - 10))}px`,
+                        textHeight: '44px',
+                        fontFamily: fontSelect.value,
+                        fontSize: parseInt(sizeSlider.value, 10) || 20,
+                        fontWeight: textDiv?.style.fontWeight || '400',
+                        fontColor: colorInput.value
+                    });
+                    setActiveText(nextText);
+                    if (typeof el.clampTextPosition === 'function') {
+                        el.clampTextPosition();
+                    }
+                    el.querySelectorAll('.element-text-content').forEach(textLayer => {
+                        textLayer.style.pointerEvents = 'auto';
+                        textLayer.contentEditable = textLayer === nextText ? "true" : "false";
+                    });
+                    nextText.focus();
+                    saveAllElements();
+                }
+
+                el.addEventListener('click', placeTextFromClick);
+
+                function getAngleFromCenter(pointer, center) {
+                    return Math.atan2(pointer.y - center.y, pointer.x - center.x) * 180 / Math.PI;
+                }
+
+                function startImageResize(e) {
+                    if (currentMode !== 'photo' || el.getAttribute('data-editing-text') !== 'true') return;
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const img = e.currentTarget.closest('.element-image-wrapper')?.querySelector('.element-img');
+                    if (!img) return;
+
+                    const pointer = getPointerPosition(e);
+                    activeImageTransform = { type: 'resize', img };
+                    imageStartX = pointer.x;
+                    imageStartScale = parseFloat(img.style.width) || 30;
+
+                    document.addEventListener('mousemove', moveImageTransform);
+                    document.addEventListener('touchmove', moveImageTransform, { passive: false });
+                    document.addEventListener('mouseup', stopImageTransform);
+                    document.addEventListener('touchend', stopImageTransform);
+                }
+
+                function startImageRotate(e) {
+                    if (currentMode !== 'photo' || el.getAttribute('data-editing-text') !== 'true') return;
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const img = e.currentTarget.closest('.element-image-wrapper')?.querySelector('.element-img');
+                    if (!img) return;
+
+                    const pointer = getPointerPosition(e);
+                    const rect = img.getBoundingClientRect();
+                    imageRotateCenter = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
+                    activeImageTransform = { type: 'rotate', img };
+                    imageStartAngle = getAngleFromCenter(pointer, imageRotateCenter);
+                    imageStartRotation = parseFloat(img.dataset.rotation || '0') || 0;
+
+                    document.addEventListener('mousemove', moveImageTransform);
+                    document.addEventListener('touchmove', moveImageTransform, { passive: false });
+                    document.addEventListener('mouseup', stopImageTransform);
+                    document.addEventListener('touchend', stopImageTransform);
+                }
+
+                function moveImageTransform(e) {
+                    if (!activeImageTransform) return;
+                    if (e.cancelable) e.preventDefault();
+
+                    const pointer = getPointerPosition(e);
+                    const img = activeImageTransform.img;
+
+                    if (activeImageTransform.type === 'resize') {
+                        const delta = pointer.x - imageStartX;
+                        const nextScale = Math.max(10, Math.min(180, imageStartScale + delta / 2));
+                        img.style.width = `${nextScale}%`;
+                        if (photoScaleSlider) {
+                            photoScaleSlider.value = `${Math.min(100, Math.round(nextScale))}`;
+                        }
+                    } else if (activeImageTransform.type === 'rotate') {
+                        const rawRotation = imageStartRotation + getAngleFromCenter(pointer, imageRotateCenter) - imageStartAngle;
+                        const nextRotation = Math.max(-180, Math.min(180, Math.round(rawRotation)));
+                        img.dataset.rotation = `${nextRotation}`;
+                        img.style.transform = `rotate(${img.dataset.rotation}deg)`;
+                        if (photoRotationSlider) {
+                            photoRotationSlider.value = `${nextRotation}`;
+                        }
+                    }
+                }
+
+                function stopImageTransform() {
+                    if (activeImageTransform) {
+                        activeImageTransform = null;
+                        saveAllElements();
+                    }
+
+                    document.removeEventListener('mousemove', moveImageTransform);
+                    document.removeEventListener('touchmove', moveImageTransform);
+                    document.removeEventListener('mouseup', stopImageTransform);
+                    document.removeEventListener('touchend', stopImageTransform);
+                }
+
+                function bindImageTransformEvents(imgWrapper, img, resizeHandle, rotateHandle) {
+                    resizeHandle.addEventListener('mousedown', startImageResize);
+                    resizeHandle.addEventListener('touchstart', startImageResize, { passive: false });
+                    rotateHandle.addEventListener('mousedown', startImageRotate);
+                    rotateHandle.addEventListener('touchstart', startImageRotate, { passive: false });
+                }
+
+                function startToolbarMove(e) {
+                    if (el.getAttribute('data-editing-text') !== 'true') return;
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const pointer = getPointerPosition(e);
+                    const toolbarRect = textControls.getBoundingClientRect();
+                    const elRect = el.getBoundingClientRect();
+                    isMovingToolbar = true;
+                    toolbarStartX = pointer.x;
+                    toolbarStartY = pointer.y;
+                    toolbarStartLeft = toolbarRect.left - elRect.left;
+                    toolbarStartTop = toolbarRect.top - elRect.top;
+                    textControls.style.left = `${toolbarStartLeft}px`;
+                    textControls.style.top = `${toolbarStartTop}px`;
+                    textControls.style.right = 'auto';
+
+                    document.addEventListener('mousemove', moveToolbar);
+                    document.addEventListener('touchmove', moveToolbar, { passive: false });
+                    document.addEventListener('mouseup', stopToolbarMove);
+                    document.addEventListener('touchend', stopToolbarMove);
+                }
+
+                function moveToolbar(e) {
+                    if (!isMovingToolbar) return;
+                    if (e.cancelable) e.preventDefault();
+
+                    const pointer = getPointerPosition(e);
+                    const nextLeft = toolbarStartLeft + pointer.x - toolbarStartX;
+                    const nextTop = toolbarStartTop + pointer.y - toolbarStartY;
+                    const maxLeft = Math.max(0, el.clientWidth - 28);
+                    const minTop = -Math.max(160, textControls.offsetHeight + 24);
+                    const maxTop = Math.max(0, el.clientHeight - 24);
+
+                    textControls.style.left = `${Math.max(-24, Math.min(nextLeft, maxLeft))}px`;
+                    textControls.style.top = `${Math.max(minTop, Math.min(nextTop, maxTop))}px`;
+                }
+
+                function stopToolbarMove() {
+                    if (isMovingToolbar) {
+                        isMovingToolbar = false;
+                        saveAllElements();
+                    }
+
+                    document.removeEventListener('mousemove', moveToolbar);
+                    document.removeEventListener('touchmove', moveToolbar);
+                    document.removeEventListener('mouseup', stopToolbarMove);
+                    document.removeEventListener('touchend', stopToolbarMove);
+                }
+
+                toolbarDragHandle.addEventListener('mousedown', startToolbarMove);
+                toolbarDragHandle.addEventListener('touchstart', startToolbarMove, { passive: false });
+
+                function updateTextBoxBounds() {
+                    if (!textDiv || !textWidthSlider) return;
+                    const maxWidth = Math.max(42, el.clientWidth - 8);
+                    const maxHeight = Math.max(28, el.clientHeight - 8);
+                    const currentWidth = parseFloat(textDiv.style.width) || parseFloat(textWidthSlider.value) || 42;
+                    const currentHeight = parseFloat(textDiv.style.height) || textDiv.offsetHeight || 28;
+                    textWidthSlider.max = `${maxWidth}`;
+
+                    if (currentWidth > maxWidth) {
+                        textDiv.style.width = `${maxWidth}px`;
+                        textWidthSlider.value = `${maxWidth}`;
+                    } else {
+                        textWidthSlider.value = `${currentWidth}`;
+                    }
+
+                    if (currentHeight > maxHeight) {
+                        textDiv.style.height = `${maxHeight}px`;
+                    }
+                }
+
+                function clampTextPosition(left, top) {
+                    if (!textDiv) return;
+                    updateTextBoxBounds();
+                    const maxLeft = Math.max(0, el.clientWidth - textDiv.offsetWidth - 4);
+                    const maxTop = Math.max(0, el.clientHeight - textDiv.offsetHeight - 4);
+                    textDiv.style.left = `${Math.max(0, Math.min(left, maxLeft))}px`;
+                    textDiv.style.top = `${Math.max(0, Math.min(top, maxTop))}px`;
+                }
+
+                el.clampTextPosition = () => {
+                    const activeText = textDiv;
+                    el.querySelectorAll('.element-text-content').forEach(textLayer => {
+                        textDiv = textLayer;
+                        clampTextPosition(parseFloat(textLayer.style.left) || 0, parseFloat(textLayer.style.top) || 0);
+                    });
+                    if (activeText) {
+                        textDiv = activeText;
+                        syncTextToolbar();
+                    }
+                };
+
+                function startTextMove(e) {
+                    if (currentMode !== 'text' || el.getAttribute('data-editing-text') !== 'true') return;
+                    if (e.target.closest('.text-resize-handle') || e.target.closest('.text-delete-btn')) return;
+                    e.stopPropagation();
+                    setActiveText(e.currentTarget);
+
+                    const pointer = getPointerPosition(e);
+                    pendingTextMove = true;
+                    isMovingText = false;
+                    textMoveStartX = pointer.x;
+                    textMoveStartY = pointer.y;
+                    textStartLeft = parseFloat(textDiv.style.left) || 0;
+                    textStartTop = parseFloat(textDiv.style.top) || 0;
+
+                    document.addEventListener('mousemove', moveText);
+                    document.addEventListener('touchmove', moveText, { passive: false });
+                    document.addEventListener('mouseup', stopTextMove);
+                    document.addEventListener('touchend', stopTextMove);
+                }
+
+                function moveText(e) {
+                    if (!pendingTextMove) return;
+
+                    const pointer = getPointerPosition(e);
+                    const dx = pointer.x - textMoveStartX;
+                    const dy = pointer.y - textMoveStartY;
+
+                    if (!isMovingText && Math.hypot(dx, dy) < 5) {
+                        return;
+                    }
+
+                    isMovingText = true;
+                    suppressTextClick = true;
+                    if (e.cancelable) e.preventDefault();
+                    clampTextPosition(textStartLeft + dx, textStartTop + dy);
+                }
+
+                function stopTextMove() {
+                    if (isMovingText) {
+                        saveAllElements();
+                    }
+
+                    pendingTextMove = false;
+                    isMovingText = false;
+                    document.removeEventListener('mousemove', moveText);
+                    document.removeEventListener('touchmove', moveText);
+                    document.removeEventListener('mouseup', stopTextMove);
+                    document.removeEventListener('touchend', stopTextMove);
+                }
+
+                function startTextResize(e) {
+                    if (currentMode !== 'text' || el.getAttribute('data-editing-text') !== 'true') return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveText(e.currentTarget.closest('.element-text-content'));
+
+                    const pointer = getPointerPosition(e);
+                    isResizingText = true;
+                    suppressTextClick = true;
+                    textResizeStartX = pointer.x;
+                    textResizeStartY = pointer.y;
+                    textStartWidth = textDiv.offsetWidth;
+                    textStartHeight = textDiv.offsetHeight;
+
+                    document.addEventListener('mousemove', resizeText);
+                    document.addEventListener('touchmove', resizeText, { passive: false });
+                    document.addEventListener('mouseup', stopTextResize);
+                    document.addEventListener('touchend', stopTextResize);
+                }
+
+                function resizeText(e) {
+                    if (!isResizingText) return;
+                    if (e.cancelable) e.preventDefault();
+
+                    const pointer = getPointerPosition(e);
+                    const left = parseFloat(textDiv.style.left) || 0;
+                    const top = parseFloat(textDiv.style.top) || 0;
+                    const maxWidth = Math.max(42, el.clientWidth - left - 4);
+                    const maxHeight = Math.max(28, el.clientHeight - top - 4);
+                    const nextWidth = Math.max(42, Math.min(textStartWidth + pointer.x - textResizeStartX, maxWidth));
+                    const nextHeight = Math.max(28, Math.min(textStartHeight + pointer.y - textResizeStartY, maxHeight));
+
+                    textDiv.style.width = `${nextWidth}px`;
+                    textDiv.style.height = `${nextHeight}px`;
+                    if (textWidthSlider) {
+                        textWidthSlider.value = `${Math.round(nextWidth)}`;
+                    }
+                }
+
+                function stopTextResize() {
+                    if (isResizingText) {
+                        isResizingText = false;
+                        saveAllElements();
+                    }
+
+                    document.removeEventListener('mousemove', resizeText);
+                    document.removeEventListener('touchmove', resizeText);
+                    document.removeEventListener('mouseup', stopTextResize);
+                    document.removeEventListener('touchend', stopTextResize);
+                }
+
+                function bindTextLayerEvents(textLayer, resizeHandle, deleteButton) {
+                    textLayer.addEventListener('mousedown', startTextMove);
+                    textLayer.addEventListener('touchstart', startTextMove, { passive: false });
+                    textLayer.addEventListener('click', (e) => {
+                        setActiveText(textLayer);
+                        if (el.getAttribute('data-editing-text') === 'true' && currentMode === 'text') {
+                            setMode('text');
+                        }
+                        if (suppressTextClick) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            suppressTextClick = false;
+                        }
+                    });
+                    resizeHandle.addEventListener('mousedown', startTextResize);
+                    resizeHandle.addEventListener('touchstart', startTextResize, { passive: false });
+                    deleteButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        removeTextLayer(textLayer);
+                    });
+                }
+
+                // Outside click handler to exit editing when clicking away
+                function onOutsideClick(e) {
+                    if (el.getAttribute('data-editing-text') === 'true') {
+                        if (!el.contains(e.target) && !textControls.contains(e.target)) {
+                            exitEditing();
+                        }
+                    }
+                }
+
+                function enterEditing() {
+                    el.setAttribute('data-editing-text', 'true');
+                    setMode('select');
+                    document.addEventListener('mousedown', onOutsideClick);
+                    document.addEventListener('touchstart', onOutsideClick);
+                }
+
+                function exitEditing() {
+                    el.removeAttribute('data-editing-text');
+                    el.removeAttribute('data-placing-text');
+                    localCanvas.style.pointerEvents = 'none';
+                    el.querySelectorAll('.element-text-content').forEach(textLayer => {
+                        textLayer.style.pointerEvents = 'auto';
+                        textLayer.contentEditable = "false";
+                    });
+                    document.removeEventListener('mousedown', onOutsideClick);
+                    document.removeEventListener('touchstart', onOutsideClick);
+                    saveAllElements();
+                }
+
+                // Drawing logic on local canvas
+                let isLocalDrawing = false;
+                let localLastX = 0;
+                let localLastY = 0;
+
+                function getCoords(e, canvas) {
+                    const rect = canvas.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    return {
+                        x: clientX - rect.left,
+                        y: clientY - rect.top
+                    };
+                }
+
+                function startLocalDrawing(e) {
+                    if (currentMode !== 'draw') return;
+                    isLocalDrawing = true;
+                    const coords = getCoords(e, localCanvas);
+                    localLastX = coords.x;
+                    localLastY = coords.y;
+                }
+
+                function drawLocal(e) {
+                    if (!isLocalDrawing || currentMode !== 'draw') return;
+                    const coords = getCoords(e, localCanvas);
+
+                    localCtx.beginPath();
+                    localCtx.moveTo(localLastX, localLastY);
+                    localCtx.lineTo(coords.x, coords.y);
+                    if (cardActiveColor === 'eraser') {
+                        localCtx.globalCompositeOperation = 'destination-out';
+                    } else {
+                        localCtx.globalCompositeOperation = 'source-over';
+                        localCtx.strokeStyle = cardActiveColor;
+                    }
+                    localCtx.lineWidth = cardActiveSize;
+                    localCtx.lineCap = 'round';
+                    localCtx.lineJoin = 'round';
+                    localCtx.stroke();
+
+                    localLastX = coords.x;
+                    localLastY = coords.y;
+                }
+
+                localCanvas.addEventListener('mousedown', startLocalDrawing);
+                localCanvas.addEventListener('mousemove', drawLocal);
+                localCanvas.addEventListener('mouseup', () => {
+                    if (isLocalDrawing) {
+                        isLocalDrawing = false;
+                        saveAllElements();
+                    }
+                });
+                localCanvas.addEventListener('mouseleave', () => {
+                    if (isLocalDrawing) {
+                        isLocalDrawing = false;
+                        saveAllElements();
+                    }
+                });
+
+                localCanvas.addEventListener('touchstart', (e) => {
+                    if (currentMode !== 'draw') return;
+                    e.preventDefault();
+                    startLocalDrawing(e);
+                }, { passive: false });
+                localCanvas.addEventListener('touchmove', (e) => {
+                    if (currentMode !== 'draw') return;
+                    e.preventDefault();
+                    drawLocal(e);
+                }, { passive: false });
+                localCanvas.addEventListener('touchend', () => {
+                    if (isLocalDrawing) {
+                        isLocalDrawing = false;
+                        saveAllElements();
+                    }
+                });
+
+                // Top right control panel (Only shows the Edit button)
+                const controls = document.createElement('div');
+                controls.className = 'element-controls';
+
+                const btnText = document.createElement('button');
+                btnText.className = 'el-ctrl-btn';
+                btnText.title = "Edit block settings";
+                btnText.textContent = 'Edit';
+                btnText.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    enterEditing();
+                });
+                controls.appendChild(btnText);
+                el.appendChild(controls);
+
+                // Double click card listener to trigger editing
+                el.addEventListener('dblclick', (e) => {
+                    if (targetContainer.classList.contains('drawing-mode') && el.getAttribute('data-editing-text') !== 'true') {
+                        e.stopPropagation();
+                        enterEditing();
+                    }
+                });
+
+                el.addEventListener('click', (e) => {
+                    if (targetContainer.classList.contains('drawing-mode')) return;
+                    if (el.dataset.isButton !== 'true' || !el.dataset.buttonUrl) return;
+                    e.preventDefault();
+                    window.open(el.dataset.buttonUrl, '_blank', 'noopener');
+                });
+
+                // Resize handle
+                const handle = document.createElement('div');
+                handle.className = 'resize-handle';
+                el.appendChild(handle);
+
+                targetContainer.appendChild(el);
+                setupDragAndResize(el, targetContainer);
+                return el;
+            }
+
+            function loadAllElements() {
+                headerContainer.querySelectorAll('.sandbox-element').forEach(el => el.remove());
+                sectionsLayoutContainer.querySelectorAll('.workspace').forEach(sec => {
+                    sec.querySelectorAll('.sandbox-element').forEach(el => el.remove());
+                });
+
+                // Navbar elements
+                const savedNav = localStorage.getItem('grug_elements_header');
+                if (savedNav) {
+                    try {
+                        const elements = JSON.parse(savedNav);
+                        elements.forEach(data => {
+                            createElementDOM(data, headerContainer);
+                        });
+                    } catch(e) {
+                        console.error("Error loading navbar elements", e);
+                    }
+                }
+
+                // Workspace sections elements
+                sectionsLayoutContainer.querySelectorAll('.workspace').forEach(sec => {
+                    const savedWork = localStorage.getItem(`grug_elements_${sec.id}`);
+                    if (savedWork) {
+                        try {
+                            const elements = JSON.parse(savedWork);
+                            elements.forEach(data => {
+                                createElementDOM(data, sec);
+                            });
+                        } catch(e) {
+                            console.error("Error loading elements for section " + sec.id, e);
+                        }
+                    }
+                });
+            }
+
+            function setupDragAndResize(el, parentContainer) {
+                const handle = el.querySelector('.resize-handle');
+                let isDragging = false;
+                let isResizing = false;
+                let startX, startY, startLeft, startTop, startWidth, startHeight;
+
+                el.addEventListener('mousedown', onMouseDown);
+                el.addEventListener('touchstart', onMouseDown, { passive: true });
+
+                function onMouseDown(e) {
+                    if (!parentContainer.classList.contains('drawing-mode')) return;
+                    
+                    // Prevent dragging and resizing while editing text
+                    if (el.getAttribute('data-editing-text') === 'true') {
+                        return;
+                    }
+
+                    const target = e.target;
+                    
+                    // Allow text selection, focus, and highlight without moving the parent div card
+                    if (target.classList.contains('element-text-content') || target.closest('.element-text-content')) {
+                        return;
+                    }
+
+                    const isHandle = target === handle || handle.contains(target);
+
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                    startX = clientX;
+                    startY = clientY;
+
+                    const rect = el.getBoundingClientRect();
+                    const parentRect = parentContainer.getBoundingClientRect();
+
+                    startLeft = rect.left - parentRect.left;
+                    startTop = rect.top - parentRect.top;
+                    startWidth = rect.width;
+                    startHeight = rect.height;
+
+                    if (isHandle) {
+                        isResizing = true;
+                        if (e.cancelable) e.preventDefault();
+                    } else {
+                        isDragging = true;
+                    }
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('touchmove', onMouseMove, { passive: false });
+                    document.addEventListener('mouseup', onMouseUp);
+                    document.addEventListener('touchend', onMouseUp);
+                }
+
+                function onMouseMove(e) {
+                    if (!isDragging && !isResizing) return;
+                    if (e.cancelable) e.preventDefault();
+
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                    const dx = clientX - startX;
+                    const dy = clientY - startY;
+
+                    const parentRect = parentContainer.getBoundingClientRect();
+
+                    if (isDragging) {
+                        let newLeft = startLeft + dx;
+                        let newTop = startTop + dy;
+
+                        const maxLeft = parentRect.width - startWidth - 15;
+                        const maxTop = parentRect.height - startHeight - 15;
+
+                        newLeft = Math.max(15, Math.min(newLeft, maxLeft));
+                        newTop = Math.max(15, Math.min(newTop, maxTop));
+
+                        el.style.left = `${newLeft}px`;
+                        el.style.top = `${newTop}px`;
+                    } else if (isResizing) {
+                        let newWidth = startWidth + dx;
+                        let newHeight = startHeight + dy;
+
+                        newWidth = Math.max(40, newWidth);
+                        newHeight = Math.max(40, newHeight);
+
+                        const maxAllowedWidth = parentRect.width - startLeft - 15;
+                        const maxAllowedHeight = parentRect.height - startTop - 15;
+
+                        newWidth = Math.min(newWidth, maxAllowedWidth);
+                        newHeight = Math.min(newHeight, maxAllowedHeight);
+
+                        el.style.width = `${newWidth}px`;
+                        el.style.height = `${newHeight}px`;
+
+                        // Resize local card drawing canvas as well
+                        const localCanvas = el.querySelector('.element-canvas');
+                        if (localCanvas) {
+                            const temp = document.createElement('canvas');
+                            temp.width = localCanvas.width;
+                            temp.height = localCanvas.height;
+                            const tempCtx = temp.getContext('2d');
+                            tempCtx.drawImage(localCanvas, 0, 0);
+
+                            localCanvas.width = newWidth;
+                            localCanvas.height = newHeight;
+
+                            const ctx = localCanvas.getContext('2d');
+                            ctx.drawImage(temp, 0, 0, temp.width, temp.height, 0, 0, newWidth, newHeight);
+                        }
+
+                        if (typeof el.clampTextPosition === 'function') {
+                            el.clampTextPosition();
+                        }
+                    }
+                }
+
+                function onMouseUp() {
+                    if (isDragging || isResizing) {
+                        isDragging = false;
+                        isResizing = false;
+
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('touchmove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        document.removeEventListener('touchend', onMouseUp);
+
+                        saveAllElements();
+                    }
+                }
+            }
+
+            // Initialize navbar canvas
+            const navCanvas = setupCanvas(document.getElementById('navbar-canvas'), 'grug_navbar_drawing', headerContainer);
+
+            // Bind spawner tools inside navbar header
+            const navTools = headerContainer.querySelector('.container-tools');
+            const btnNavAddSq = navTools.querySelector('.btn-add-sq');
+            const btnNavAddDiv = navTools.querySelector('.btn-add-div');
+
+            btnNavAddSq.addEventListener('click', () => {
+                const elId = `el_${Date.now()}`;
+                createElementDOM({
+                    id: elId,
+                    type: 'square',
+                    left: '100px',
+                    top: '20px',
+                    width: '80px',
+                    height: '80px'
+                }, headerContainer);
+                saveAllElements();
+            });
+
+            btnNavAddDiv.addEventListener('click', () => {
+                const name = prompt("What is the name of this custom div inside the navbar?");
+                if (name && name.trim() !== "") {
+                    const elId = `el_${Date.now()}`;
+                    createElementDOM({
+                        id: elId,
+                        type: 'custom',
+                        name: name.trim(),
+                        left: '120px',
+                        top: '20px',
+                        width: '120px',
+                        height: '60px'
+                    }, headerContainer);
+                    saveAllElements();
+                }
+            });
+
+            // Add new section spawner
+            btnAddSection.addEventListener('click', () => {
+                const name = prompt("Enter a name for this new section (e.g. pricing, about, banner):");
+                if (name && name.trim() !== "") {
+                    const secId = `sec_${Date.now()}`;
+                    createSectionDOM(secId, name.trim());
+                    saveSections();
+                }
+            });
+
+            function textItem(text, left, top, width, height, size, weight = '700', color = '#111111') {
+                return {
+                    text,
+                    textLeft: left,
+                    textTop: top,
+                    textWidth: width,
+                    textHeight: height,
+                    fontSize: size,
+                    fontWeight: weight,
+                    fontColor: color,
+                    fontFamily: "'Cabin Sketch', cursive"
+                };
+            }
+
+            function addTemplateSection(name, elements) {
+                const secId = `sec_${Date.now()}`;
+                const sec = createSectionDOM(secId, name);
+                saveSections();
+                elements.forEach((elementData, index) => {
+                    createElementDOM({
+                        id: `el_${Date.now()}_${index}`,
+                        ...elementData
+                    }, sec);
+                });
+                saveAllElements();
+                enterDrawMode();
+                sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function addHeroTemplate() {
+                addTemplateSection('hero', [
+                    {
+                        type: 'section-text',
+                        left: '90px',
+                        top: '105px',
+                        width: '560px',
+                        height: '110px',
+                        textItems: [textItem('Your Website Headline', '12px', '10px', '520px', '78px', 44, '700')]
+                    },
+                    {
+                        type: 'section-text',
+                        left: '96px',
+                        top: '220px',
+                        width: '500px',
+                        height: '82px',
+                        textItems: [textItem('Write a clear promise for visitors. Explain what you do and why it matters.', '10px', '10px', '460px', '56px', 22, '400')]
+                    },
+                    {
+                        type: 'square',
+                        left: '100px',
+                        top: '330px',
+                        width: '190px',
+                        height: '60px',
+                        isButton: true,
+                        textItems: [textItem('Get Started', '18px', '13px', '150px', '34px', 23, '700')]
+                    },
+                    {
+                        type: 'square',
+                        left: '660px',
+                        top: '105px',
+                        width: '330px',
+                        height: '250px',
+                        textItems: [textItem('Photo / GIF', '88px', '100px', '160px', '44px', 26, '700', '#007bff')]
+                    }
+                ]);
+            }
+
+            function addContentTemplate() {
+                addTemplateSection('content', [
+                    {
+                        type: 'section-text',
+                        left: '90px',
+                        top: '76px',
+                        width: '520px',
+                        height: '78px',
+                        textItems: [textItem('What makes this page special', '10px', '8px', '480px', '52px', 34, '700')]
+                    },
+                    {
+                        type: 'square',
+                        left: '96px',
+                        top: '190px',
+                        width: '250px',
+                        height: '160px',
+                        textItems: [textItem('Feature One', '18px', '18px', '210px', '38px', 25, '700'), textItem('Short useful text here.', '18px', '68px', '200px', '52px', 19, '400')]
+                    },
+                    {
+                        type: 'square',
+                        left: '390px',
+                        top: '190px',
+                        width: '250px',
+                        height: '160px',
+                        textItems: [textItem('Feature Two', '18px', '18px', '210px', '38px', 25, '700'), textItem('Add the second reason.', '18px', '68px', '200px', '52px', 19, '400')]
+                    },
+                    {
+                        type: 'square',
+                        left: '684px',
+                        top: '190px',
+                        width: '250px',
+                        height: '160px',
+                        textItems: [textItem('Feature Three', '18px', '18px', '210px', '38px', 25, '700'), textItem('Finish with the proof.', '18px', '68px', '200px', '52px', 19, '400')]
+                    }
+                ]);
+            }
+
+            function addGalleryTemplate() {
+                addTemplateSection('gallery', [
+                    {
+                        type: 'section-text',
+                        left: '90px',
+                        top: '70px',
+                        width: '360px',
+                        height: '70px',
+                        textItems: [textItem('Gallery', '10px', '8px', '320px', '48px', 38, '700')]
+                    },
+                    {
+                        type: 'square',
+                        left: '95px',
+                        top: '165px',
+                        width: '270px',
+                        height: '210px',
+                        textItems: [textItem('Image 1', '82px', '80px', '120px', '42px', 27, '700', '#007bff')]
+                    },
+                    {
+                        type: 'square',
+                        left: '405px',
+                        top: '165px',
+                        width: '270px',
+                        height: '210px',
+                        textItems: [textItem('Image 2', '82px', '80px', '120px', '42px', 27, '700', '#007bff')]
+                    },
+                    {
+                        type: 'square',
+                        left: '715px',
+                        top: '165px',
+                        width: '270px',
+                        height: '210px',
+                        textItems: [textItem('Image 3', '82px', '80px', '120px', '42px', 27, '700', '#007bff')]
+                    }
+                ]);
+            }
+
+            function addCtaTemplate() {
+                addTemplateSection('call to action', [
+                    {
+                        type: 'section-text',
+                        left: '120px',
+                        top: '135px',
+                        width: '640px',
+                        height: '96px',
+                        textItems: [textItem('Ready to build something better?', '12px', '10px', '600px', '66px', 40, '700')]
+                    },
+                    {
+                        type: 'section-text',
+                        left: '126px',
+                        top: '240px',
+                        width: '520px',
+                        height: '68px',
+                        textItems: [textItem('Add a short final reason and send visitors to the next step.', '10px', '8px', '480px', '48px', 22, '400')]
+                    },
+                    {
+                        type: 'square',
+                        left: '700px',
+                        top: '210px',
+                        width: '210px',
+                        height: '64px',
+                        isButton: true,
+                        textItems: [textItem('Contact Now', '22px', '15px', '160px', '36px', 24, '700')]
+                    }
+                ]);
+            }
+
+            function exportCurrentDesign() {
+                Object.values(activeCanvases).forEach(canvas => canvas.save());
+                saveSections();
+                saveAllElements();
+                exitDrawMode();
+
+                const html = `<!DOCTYPE html>\n${document.documentElement.outerHTML}`;
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'grug-website.html';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 500);
+            }
+
+            btnTemplateHero?.addEventListener('click', addHeroTemplate);
+            btnTemplateContent?.addEventListener('click', addContentTemplate);
+            btnTemplateGallery?.addEventListener('click', addGalleryTemplate);
+            btnTemplateCta?.addEventListener('click', addCtaTemplate);
+            btnPreviewToggle?.addEventListener('click', () => {
+                Object.values(activeCanvases).forEach(canvas => canvas.save());
+                if (headerContainer.classList.contains('drawing-mode')) {
+                    exitDrawMode();
+                } else {
+                    enterDrawMode();
+                }
+            });
+            btnExportHtml?.addEventListener('click', exportCurrentDesign);
+
+            // Color selection controls
+            colorButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    colorButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeColor = btn.getAttribute('data-color');
+                });
+            });
+
+            // Sizing controls
+            penSize.addEventListener('input', () => {
+                activeSize = penSize.value;
+            });
+
+            // Redraw mode activation / Toggle behavior
+            btnRedraw.addEventListener('click', () => {
+                if (headerContainer.classList.contains('drawing-mode')) {
+                    Object.values(activeCanvases).forEach(canvas => canvas.save());
+                    exitDrawMode();
+                } else {
+                    enterDrawMode();
+                }
+            });
+
+            // State management functions
+            function enterDrawMode() {
+                headerContainer.classList.add('drawing-mode');
+                sectionsLayoutContainer.querySelectorAll('.workspace').forEach(sec => {
+                    sec.classList.add('drawing-mode');
+                });
+                // Enable live editing for all text content elements
+                document.querySelectorAll('.element-text-content').forEach(textEl => {
+                    textEl.contentEditable = "true";
+                });
+                controls.style.display = 'block';
+                btnRedraw.textContent = '✔ Save Design';
+                btnRedraw.classList.add('save-state');
+            }
+
+            function exitDrawMode() {
+                headerContainer.classList.remove('drawing-mode');
+                sectionsLayoutContainer.querySelectorAll('.workspace').forEach(sec => {
+                    sec.classList.remove('drawing-mode');
+                });
+                // Disable live editing for all text content elements
+                document.querySelectorAll('.element-text-content').forEach(textEl => {
+                    textEl.contentEditable = "false";
+                });
+                controls.style.display = 'none';
+                btnRedraw.textContent = '✎ Redraw Design';
+                btnRedraw.classList.remove('save-state');
+            }
+
+            // Undo Button Event
+            btnUndo.addEventListener('click', () => {
+                Object.values(activeCanvases).forEach(canvas => canvas.undo());
+            });
+
+            // Clear control panel click reset
+            btnClear.addEventListener('click', () => {
+                Object.values(activeCanvases).forEach(canvas => canvas.clear());
+                headerContainer.querySelectorAll('.sandbox-element').forEach(el => el.remove());
+                sectionsLayoutContainer.querySelectorAll('.workspace').forEach(sec => {
+                    sec.querySelectorAll('.sandbox-element').forEach(el => el.remove());
+                });
+                saveAllElements();
+            });
+
+            // Save control panel click
+            btnSave.addEventListener('click', () => {
+                Object.values(activeCanvases).forEach(canvas => canvas.save());
+                saveAllElements();
+                exitDrawMode();
+            });
+
+            // Keep custom elements inside bounds on window resizing
+            window.addEventListener('resize', () => {
+                const headerRect = headerContainer.getBoundingClientRect();
+                headerContainer.querySelectorAll('.sandbox-element').forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    const currentLeft = parseInt(el.style.left, 10);
+                    const currentTop = parseInt(el.style.top, 10);
+                    const maxLeft = headerRect.width - rect.width - 15;
+                    const maxTop = headerRect.height - rect.height - 15;
+                    el.style.left = `${Math.max(15, Math.min(currentLeft, maxLeft))}px`;
+                    el.style.top = `${Math.max(15, Math.min(currentTop, maxTop))}px`;
+                    if (typeof el.clampTextPosition === 'function') {
+                        el.clampTextPosition();
+                    }
+                });
+
+                sectionsLayoutContainer.querySelectorAll('.workspace').forEach(sec => {
+                    const secRect = sec.getBoundingClientRect();
+                    sec.querySelectorAll('.sandbox-element').forEach(el => {
+                        const rect = el.getBoundingClientRect();
+                        const currentLeft = parseInt(el.style.left, 10);
+                        const currentTop = parseInt(el.style.top, 10);
+                        const maxLeft = secRect.width - rect.width - 15;
+                        const maxTop = secRect.height - rect.height - 15;
+                        el.style.left = `${Math.max(15, Math.min(currentLeft, maxLeft))}px`;
+                        el.style.top = `${Math.max(15, Math.min(currentTop, maxTop))}px`;
+                        if (typeof el.clampTextPosition === 'function') {
+                            el.clampTextPosition();
+                        }
+                    });
+                });
+                saveAllElements();
+            });
+
+            // Load sections and elements
+            loadSections();
+            loadAllElements();
+
+            // Read save state from storage to set drawing mode initially
+            const savedNav = localStorage.getItem('grug_navbar_drawing');
+            const savedSections = localStorage.getItem('grug_workspace_sections');
+            let hasSketches = !!savedNav;
+            if (savedSections) {
+                try {
+                    const list = JSON.parse(savedSections);
+                    list.forEach(sec => {
+                        if (localStorage.getItem(`grug_drawing_${sec.id}`)) {
+                            hasSketches = true;
+                        }
+                    });
+                } catch(e) {}
+            }
+
+            if (hasSketches) {
+                exitDrawMode();
+            } else {
+                enterDrawMode();
+            }
+        });
+    </script>
+</body>
+</html>

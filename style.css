@@ -1,0 +1,1107 @@
+/* Import Google Font for handwriting look */
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap');
+
+/* --- Reset & Core Settings --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #f7f3ea;
+    background-image:
+        radial-gradient(circle at 18% 12%, rgba(86, 72, 48, 0.035) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 78% 28%, rgba(86, 72, 48, 0.025) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 36% 74%, rgba(86, 72, 48, 0.025) 0 1px, transparent 1.5px),
+        linear-gradient(90deg, rgba(120, 110, 92, 0.025), transparent 24%, rgba(255, 255, 255, 0.24) 50%, transparent 76%, rgba(120, 110, 92, 0.02)),
+        linear-gradient(#fbf8f1, #f1eadc);
+    background-size: 34px 34px, 46px 46px, 58px 58px, 100% 100%, 100% 100%;
+    color: #111111;
+    font-family: 'Architects Daughter', cursive;
+    overflow-x: hidden;
+    height: 100%;
+    /* Default custom pencil cursor */
+    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M2 30 L8 28 L28 8 C30 6 30 2 28 0 C26 -2 22 -2 20 0 L0 20 Z' fill='%23ffffff' stroke='%23111111' stroke-width='2' stroke-linejoin='round'/><path d='M0 20 L12 32 M8 28 L20 16' stroke='%23111111' stroke-width='1.5'/><path d='M0 20 L2 30 L12 32 Z' fill='%23111111'/><circle cx='28' cy='4' r='2' fill='%23ff3b30'/></svg>") 2 30, auto;
+}
+
+/* Wiggle hover animation */
+@keyframes wiggle {
+    0% { transform: rotate(-0.5deg) translate(-0.3px, -0.3px); }
+    50% { transform: rotate(0.3deg) translate(0.3px, 0.3px); }
+    100% { transform: rotate(-0.3deg) translate(-0.3px, 0.5px); }
+}
+
+@keyframes cardDrawIn {
+    0% {
+        clip-path: inset(0 100% 0 0);
+        opacity: 0.2;
+        filter: url(#paint-sketch);
+    }
+    65% {
+        clip-path: inset(0 0 0 0);
+        opacity: 1;
+    }
+    78% { transform: rotate(-0.4deg); }
+    100% {
+        clip-path: inset(0 0 0 0);
+        opacity: 1;
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes cardShake {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    15% { transform: translate(-2px, 1px) rotate(-0.8deg); }
+    30% { transform: translate(2px, -1px) rotate(0.7deg); }
+    45% { transform: translate(-1px, -1px) rotate(-0.5deg); }
+    60% { transform: translate(1px, 1px) rotate(0.5deg); }
+    75% { transform: translate(-1px, 0) rotate(-0.3deg); }
+}
+
+/* --- Drawing Control Panel --- */
+.draw-controls {
+    background-color: rgba(250, 247, 240, 0.97);
+    background-image: linear-gradient(rgba(120, 110, 92, 0.025), rgba(255, 255, 255, 0.12));
+    border-bottom: 2px solid #111111;
+    padding: 10px 20px;
+    width: 100%;
+    position: relative;
+    z-index: 2000;
+    filter: url(#paint-sketch);
+}
+
+.controls-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 1480px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.grug-tip {
+    font-size: 0.98rem;
+    font-weight: bold;
+    color: #007bff;
+    max-width: 280px;
+    line-height: 1.15;
+}
+
+.builder-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 9px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 2px solid #111111;
+    box-shadow: 2px 2px 0 #111111;
+}
+
+.builder-label {
+    color: #ff3b30;
+    font-family: 'Cabin Sketch', cursive;
+    font-size: 1rem;
+    font-weight: 700;
+    padding-right: 3px;
+    white-space: nowrap;
+}
+
+.builder-btn {
+    min-height: 31px;
+    min-width: 68px;
+    padding: 5px 11px;
+    background: #fffdf8;
+    border: 2px solid #111111;
+    color: #111111;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 0.96rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 1px 1px 0 #111111;
+    transition: transform 0.12s ease, background-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.builder-btn:hover {
+    background: #f4f8ff;
+    transform: translate(-1px, -1px);
+}
+
+.builder-btn.primary {
+    background: #111111;
+    color: #ffffff;
+}
+
+.builder-btn.primary:hover {
+    background: #007bff;
+    border-color: #111111;
+}
+
+.publish-builder .builder-btn {
+    border-color: #007bff;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 9px;
+    background: rgba(255, 255, 255, 0.64);
+    border: 2px dashed rgba(17, 17, 17, 0.45);
+    flex-wrap: wrap;
+}
+
+/* Color Picker */
+.color-picker {
+    display: flex;
+    gap: 10px;
+}
+
+.color-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    outline: 1.5px solid #111111;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.color-btn.active {
+    transform: scale(1.3);
+    outline: 2px solid #ff3b30;
+}
+
+.color-btn.eraser-btn {
+    background-color: #ffffff;
+    border: 2px dashed #ff3b30;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    color: #ff3b30;
+    line-height: 1;
+}
+
+/* Sizing slider */
+.size-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.size-label {
+    font-size: 1rem;
+    user-select: none;
+}
+
+#pen-size {
+    cursor: pointer;
+    width: 80px;
+    accent-color: #111111;
+}
+
+/* Hand-drawn styled buttons */
+.control-btn-paint {
+    background: #ffffff;
+    border: 2px solid #111111;
+    color: #111111;
+    padding: 6px 16px;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s ease, background-color 0.15s ease;
+}
+
+.control-btn-paint:hover {
+    background-color: #f5f5f5;
+    animation: wiggle 0.15s infinite alternate;
+}
+
+.control-btn-paint.save {
+    background-color: #fffde6; /* Yellow marker */
+}
+
+.control-btn-paint.save:hover {
+    background-color: #fffae6;
+    color: #ff3b30;
+    border-color: #ff3b30;
+}
+
+/* --- Floating Redraw Toggle Button (Sticky at bottom-right) --- */
+.redraw-btn {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background: #ffffff;
+    border: 2px solid #111111;
+    padding: 10px 20px;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.1rem;
+    font-weight: bold;
+    z-index: 2500; /* Ensure it sits above all other elements */
+    cursor: pointer;
+    transition: transform 0.1s ease, color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    filter: url(#paint-sketch);
+    display: block; /* Always visible */
+}
+
+.redraw-btn:hover {
+    animation: wiggle 0.15s infinite alternate;
+    color: #007bbf;
+    border-color: #007bbf;
+    background-color: #f0f8ff;
+}
+
+/* Hover style during active editing mode */
+.redraw-btn.save-state:hover {
+    color: #ff3b30;
+    border-color: #ff3b30;
+    background-color: #fffde6;
+}
+
+/* --- Header Area --- */
+.header {
+    background-color: rgba(250, 247, 240, 0.96);
+    background-image:
+        radial-gradient(circle at 22% 24%, rgba(86, 72, 48, 0.03) 0 1px, transparent 1.5px),
+        linear-gradient(#fbf8f1, #f2edde);
+    width: 100%;
+    position: relative;
+    padding-bottom: 25px; /* Spacing for custom divider drawings */
+    border-bottom: 3px dashed transparent;
+    transition: border-color 0.2s ease;
+}
+
+.canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+#navbar-canvas,
+.canvas-container canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    image-rendering: pixelated; /* Paint pencil effect */
+}
+
+/* When in drawing mode, enable drawing clicks on respective canvases */
+.header.drawing-mode #navbar-canvas,
+.workspace.drawing-mode .canvas-container canvas {
+    pointer-events: auto;
+    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M2 30 L8 28 L28 8 C30 6 30 2 28 0 C26 -2 22 -2 20 0 L0 20 Z' fill='%23ffffff' stroke='%23111111' stroke-width='2' stroke-linejoin='round'/><path d='M0 20 L12 32 M8 28 L20 16' stroke='%23111111' stroke-width='1.5'/><path d='M0 20 L2 30 L12 32 Z' fill='%23ff3b30'/><circle cx='28' cy='4' r='2' fill='%23ff3b30'/></svg>") 2 30, crosshair;
+}
+
+/* Disable navigation interactions while drawing to avoid accidental clicking */
+.header.drawing-mode .logo,
+.header.drawing-mode .nav-link,
+.header.drawing-mode .contact-btn {
+    pointer-events: none;
+    user-select: none;
+}
+
+/* --- Drawing Helpers / Guide outlines (visible only in drawing mode) --- */
+.header.drawing-mode,
+.workspace.drawing-mode {
+    background-image:
+        repeating-linear-gradient(0deg, transparent 0 27px, rgba(75, 92, 134, 0.10) 28px, transparent 29px),
+        linear-gradient(90deg, transparent 0 72px, rgba(160, 70, 58, 0.10) 73px, transparent 75px),
+        radial-gradient(circle at 16% 18%, rgba(86, 72, 48, 0.025) 0 1px, transparent 1.5px),
+        linear-gradient(#fbf8f1, #f2edde);
+    background-size: 100% 29px, 100% 100%, 38px 38px, 100% 100%;
+}
+
+/* Guideline divider helper at bottom of navbar */
+.header.drawing-mode {
+    border-bottom-color: rgba(17, 17, 17, 0.15);
+}
+
+/* Guides on links */
+.header.drawing-mode .nav-link {
+    border-bottom: 2px dashed rgba(17, 17, 17, 0.2);
+}
+
+/* Guide on contact button */
+.header.drawing-mode .contact-btn {
+    border: 2px dashed rgba(17, 17, 17, 0.2) !important;
+}
+
+/* --- Website Workspace Container --- */
+.workspace {
+    position: relative;
+    background-color: #fbf8f1;
+    background-image:
+        radial-gradient(circle at 16% 18%, rgba(86, 72, 48, 0.03) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 72% 34%, rgba(86, 72, 48, 0.02) 0 1px, transparent 1.5px),
+        linear-gradient(90deg, rgba(120, 110, 92, 0.025), transparent 18%, rgba(255, 255, 255, 0.25) 50%, transparent 82%, rgba(120, 110, 92, 0.02)),
+        linear-gradient(#fffdf8, #f2edde);
+    background-size: 38px 38px, 64px 64px, 100% 100%, 100% 100%;
+    min-height: 800px;
+    margin: 45px 40px 25px 40px; /* Increased top margin to prevent overlapping the wobbly badge */
+    border-radius: 8px;
+    border: 3px dashed transparent; /* Match spacing to avoid shifts */
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    z-index: 5;
+}
+
+/* Drawing mode guidelines helper for page workspace outline */
+.workspace.drawing-mode {
+    border-color: rgba(17, 17, 17, 0.25);
+}
+
+/* Wobbly section label badges */
+.section-label {
+    position: absolute;
+    top: -20px;
+    left: 25px;
+    background-color: #fffde6; /* Highlighter yellow tint */
+    border: 2px solid #111111;
+    padding: 6px 14px;
+    font-family: 'Cabin Sketch', cursive;
+    font-weight: bold;
+    font-size: 1.25rem;
+    color: #111111;
+    z-index: 20;
+    filter: url(#paint-sketch);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    box-shadow: 3px 3px 0px #111111;
+    user-select: none;
+    pointer-events: none;
+    display: none; /* Hide by default in saved view mode */
+}
+
+/* Only display section labels in drawing mode */
+.drawing-mode .section-label {
+    display: block;
+}
+
+/* Container-specific Spawning Tools (Navbar and Section headers) */
+.container-tools {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: none; /* Hidden by default in view mode */
+    gap: 10px;
+    z-index: 100;
+    filter: url(#paint-sketch);
+}
+
+.workspace .container-tools {
+    left: 24px;
+    right: 24px;
+    top: 18px;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+    background-color: rgba(255, 255, 255, 0.96);
+    border: 2px solid #111111;
+    border-radius: 8px;
+    padding: 8px 10px;
+    box-shadow: 4px 4px 0 #111111;
+    flex-wrap: wrap;
+}
+
+.section-toolbar-title {
+    color: #007bff;
+    font-family: 'Cabin Sketch', cursive;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0 10px 0 4px;
+    text-transform: uppercase;
+    border-right: 2px solid #111111;
+}
+
+/* Only display container tools during drawing mode */
+.drawing-mode .container-tools {
+    display: flex;
+}
+
+.tool-btn {
+    background-color: #ffffff;
+    border: 2px solid #111111;
+    color: #111111;
+    padding: 6px 12px;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s ease, background-color 0.15s ease;
+}
+
+.workspace .tool-btn {
+    height: 30px;
+    min-width: 64px;
+    padding: 4px 12px;
+    border-radius: 4px;
+}
+
+.workspace .btn-add-text {
+    background-color: #f0f8ff;
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.workspace .btn-add-button {
+    background-color: #111111;
+    color: #ffffff;
+}
+
+.workspace .btn-add-image {
+    background-color: #fffde6;
+}
+
+.workspace .btn-add-gif {
+    background-color: #f5f0ff;
+    color: #6f42c1;
+    border-color: #6f42c1;
+}
+
+.tool-btn:hover {
+    background-color: #f5f5f5;
+    animation: wiggle 0.15s infinite alternate;
+}
+
+.btn-del-sec {
+    background-color: #fff0f0;
+    border-color: #ff3b30;
+    color: #ff3b30;
+}
+
+.btn-del-sec:hover {
+    background-color: #ffe5e5;
+    color: #ff3b30;
+    border-color: #ff3b30;
+}
+
+/* --- Navbar Elements --- */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    background: transparent;
+    position: relative;
+    z-index: 5;
+}
+
+/* Logo */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #111111;
+    font-size: 1.6rem;
+    font-weight: bold;
+    user-select: none;
+    transition: transform 0.2s ease;
+}
+
+.logo-text {
+    filter: url(#paint-sketch);
+}
+
+.logo:hover {
+    animation: wiggle 0.15s infinite alternate;
+}
+
+.logo:hover .pen-icon {
+    transform: rotate(-15deg) scale(1.15);
+}
+
+.pen-icon {
+    filter: url(#paint-sketch);
+    transition: transform 0.2s ease;
+    transform-origin: bottom left;
+}
+
+/* Navigation Menu Links */
+.nav-menu {
+    display: flex;
+    gap: 35px;
+    align-items: center;
+}
+
+.nav-link {
+    position: relative;
+    text-decoration: none;
+    color: #111111;
+    font-size: 1.25rem;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-link span {
+    filter: url(#paint-sketch);
+}
+
+.nav-link:hover {
+    animation: wiggle 0.12s infinite alternate;
+    color: #007bff; /* Hover blue */
+}
+
+/* Contact Button */
+.contact-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    font-size: 1.2rem;
+    color: #111111;
+    text-decoration: none;
+    background-color: transparent;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    user-select: none;
+    /* Dotted border is ONLY visible during drawing mode as a helper boundary */
+    border: 2px solid transparent; 
+}
+
+.contact-btn span {
+    z-index: 2;
+    filter: url(#paint-sketch);
+}
+
+.contact-btn:hover {
+    background-color: #fffde6; /* Highlighter yellow tint */
+    animation: wiggle 0.1s infinite alternate;
+    color: #ff3b30;
+}
+
+/* Sandbox Elements styling */
+.sandbox-element {
+    position: absolute;
+    border: 2px solid #111111;
+    background-color: rgba(255, 255, 255, 0.9);
+    filter: url(#paint-sketch);
+    box-sizing: border-box;
+    transition: outline 0.15s ease;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 10px 10px 10px;
+    text-align: center;
+    overflow: hidden;
+}
+
+.sandbox-element.square {
+    /* Square styling */
+}
+
+.sandbox-element.custom-div {
+    background-color: rgba(255, 253, 230, 0.9); /* Highlighter yellow-tint background */
+}
+
+.sandbox-element.section-text-block {
+    border-color: transparent;
+    background-color: transparent;
+    box-shadow: none;
+    padding: 0;
+    filter: none;
+}
+
+.workspace.drawing-mode .sandbox-element.section-text-block {
+    outline-color: rgba(0, 123, 255, 0.45);
+}
+
+.sandbox-element.section-text-block .element-text-content {
+    background-color: transparent;
+}
+
+.sandbox-element.section-image-block {
+    border-color: transparent;
+    background-color: transparent;
+    box-shadow: none;
+    padding: 0;
+    filter: none;
+}
+
+.workspace.drawing-mode .sandbox-element.section-image-block {
+    outline-color: rgba(0, 123, 255, 0.45);
+}
+
+.sandbox-element.section-image-block .element-image-wrapper {
+    margin-top: 0;
+}
+
+.sandbox-element.section-image-block .element-img {
+    border: none;
+    border-radius: 0;
+    filter: none;
+    max-height: 100%;
+}
+
+.sandbox-element.button-block {
+    cursor: pointer;
+}
+
+.sandbox-element.anim-draw-in {
+    animation: cardDrawIn 1.15s ease both;
+}
+
+.sandbox-element.anim-shake {
+    animation: cardShake 0.65s ease-in-out infinite;
+}
+
+.drawing-mode .sandbox-element.anim-draw-in,
+.drawing-mode .sandbox-element.anim-shake {
+    animation: none;
+}
+
+.drawing-mode .sandbox-element.button-block {
+    outline-color: rgba(0, 123, 255, 0.65);
+}
+
+.element-name {
+    position: absolute;
+    top: -24px;
+    left: 5px;
+    font-family: 'Gochi Hand', cursive;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ff3b30; /* Red ink for element name tags */
+    background-color: #ffffff;
+    border: 1.5px solid #111111;
+    padding: 2px 8px;
+    border-radius: 4px;
+    z-index: 20;
+    filter: url(#paint-sketch);
+    text-align: center;
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
+    box-shadow: 1px 1px 0px #111111;
+    display: none; /* Hide by default in saved view mode */
+}
+
+/* Only display element names in drawing mode */
+.drawing-mode .sandbox-element .element-name {
+    display: block;
+}
+
+/* Floating option panels for block elements */
+.element-controls {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: none; /* Only visible in drawing mode */
+    gap: 4px;
+    z-index: 30;
+}
+
+.drawing-mode .sandbox-element .element-controls {
+    display: flex;
+}
+
+.el-ctrl-btn {
+    min-width: 22px;
+    height: 22px;
+    padding: 2px 8px;
+    border: 1.5px solid #111111;
+    background-color: #ffffff;
+    color: #111111;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: transform 0.1s ease, background-color 0.1s ease;
+    filter: url(#paint-sketch);
+    white-space: nowrap;
+}
+
+.el-ctrl-btn:hover {
+    transform: scale(1.2);
+    background-color: #f5f5f5;
+}
+
+/* Element Text Content can be positioned inside the card */
+.element-text-content {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    min-width: 42px;
+    min-height: 28px;
+    max-width: calc(100% - 8px);
+    padding: 5px 18px 14px 7px;
+    box-sizing: border-box;
+    font-family: 'Gochi Hand', cursive;
+    font-size: 1.25rem;
+    color: #111111;
+    word-break: break-word;
+    outline: none; /* Remove browser default focus outline */
+    z-index: 10;
+    text-align: left;
+    overflow-wrap: anywhere;
+    overflow: hidden;
+    line-height: 1.3;
+}
+
+.sandbox-element[data-editing-text="true"] .element-text-content {
+    background-color: rgba(255, 255, 255, 0.45);
+    cursor: move;
+    outline: 1.5px dashed rgba(0, 123, 255, 0.75);
+}
+
+.sandbox-element[data-editing-text="true"] .element-text-content.active-text-layer {
+    outline: 2px solid #007bff;
+}
+
+.text-resize-handle {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    width: 15px;
+    height: 15px;
+    background-color: #007bff;
+    border: 2px solid #111111;
+    border-radius: 50%;
+    cursor: se-resize;
+    display: none;
+    z-index: 15;
+    box-shadow: 1px 1px 0 #111111;
+}
+
+.sandbox-element[data-editing-text="true"] .text-resize-handle {
+    display: block;
+}
+
+.text-delete-btn,
+.image-delete-btn {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #111111;
+    background-color: #fff0f0;
+    color: #ff3b30;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    z-index: 16;
+    box-shadow: 1px 1px 0 #111111;
+}
+
+.text-delete-btn {
+    top: -8px;
+    right: -8px;
+}
+
+.image-delete-btn {
+    top: 6px;
+    right: 6px;
+}
+
+.sandbox-element[data-editing-text="true"] .text-delete-btn,
+.sandbox-element[data-editing-text="true"] .image-delete-btn {
+    display: inline-flex;
+}
+
+/* Typography Customizer Bar for blocks (floats outside on the top right) */
+.element-text-controls {
+    position: absolute;
+    top: -38px; /* Floats above the top edge */
+    right: 0px; /* Aligns to the right edge */
+    background-color: #ffffff;
+    border: 2px solid #111111;
+    padding: 6px 10px;
+    border-radius: 4px;
+    display: none; /* Hidden by default */
+    gap: 10px;
+    align-items: center;
+    z-index: 100;
+    box-shadow: 3px 3px 0px #111111;
+    filter: url(#paint-sketch);
+    white-space: nowrap;
+    width: auto;
+    max-width: min(760px, calc(100vw - 32px));
+    flex-wrap: wrap;
+}
+
+/* Only display customizer row during editing mode */
+.sandbox-element[data-editing-text="true"] .element-text-controls {
+    display: flex !important;
+}
+
+.el-mode-tabs,
+.el-sub-panel,
+.el-global-actions {
+    align-items: center;
+}
+
+.toolbar-label {
+    color: #007bff;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 11px;
+    font-weight: bold;
+    padding-right: 2px;
+    text-transform: uppercase;
+}
+
+.toolbar-drag-handle {
+    min-width: 42px;
+    height: 22px;
+    border: 1.5px solid #111111;
+    background-color: #fffde6;
+    color: #111111;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: move;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    filter: url(#paint-sketch);
+}
+
+.toolbar-drag-handle:hover {
+    background-color: #f5f5f5;
+    transform: scale(1.08);
+}
+
+.el-font-select {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 11px;
+    font-weight: bold;
+    border: 1.5px solid #111111;
+    background: #ffffff;
+    padding: 2px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+    filter: url(#paint-sketch);
+}
+
+.el-font-size-slider {
+    width: 60px;
+    height: 4px;
+    accent-color: #111111;
+    cursor: pointer;
+}
+
+.text-width-slider {
+    width: 74px;
+    accent-color: #007bff;
+}
+
+.el-color-input {
+    width: 22px;
+    height: 20px;
+    border: 1.5px solid #111111;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 4px;
+    filter: url(#paint-sketch);
+}
+
+/* Green done button inside the customizer bar */
+.el-ctrl-btn.el-btn-done {
+    background-color: #e6ffe6;
+    color: #28a745;
+    border-color: #28a745;
+}
+
+.el-ctrl-btn.el-btn-done:hover {
+    background-color: #d4ffd4;
+}
+
+/* Element Image Wrapper & Scaling */
+.element-image-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    margin-top: 6px;
+    gap: 4px;
+}
+
+.sandbox-element[data-media-kind="gif"] .element-image-wrapper::before {
+    content: "GIF";
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background-color: #f5f0ff;
+    border: 1.5px solid #6f42c1;
+    color: #6f42c1;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 1px 6px;
+    border-radius: 4px;
+    z-index: 14;
+    display: none;
+}
+
+.drawing-mode .sandbox-element[data-media-kind="gif"] .element-image-wrapper::before {
+    display: block;
+}
+
+.element-img {
+    max-width: 100%;
+    max-height: 70%;
+    object-fit: contain;
+    border: 1.5px solid #111111;
+    border-radius: 4px;
+    filter: url(#paint-sketch);
+    transform-origin: center center;
+}
+
+.image-transform-handle {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #111111;
+    border-radius: 50%;
+    display: none;
+    z-index: 16;
+    box-shadow: 1px 1px 0 #111111;
+}
+
+.image-resize-handle {
+    right: 10px;
+    bottom: 10px;
+    background-color: #007bff;
+    cursor: nwse-resize;
+}
+
+.image-rotate-handle {
+    left: 50%;
+    top: 14px;
+    transform: translateX(-50%);
+    background-color: #fffde6;
+    cursor: grab;
+}
+
+.image-rotate-handle::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 14px;
+    width: 2px;
+    height: 18px;
+    background-color: #111111;
+    transform: translateX(-50%);
+}
+
+.image-rotate-handle::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 2px solid #111111;
+    border-left-color: transparent;
+    border-radius: 50%;
+}
+
+.sandbox-element[data-editing-text="true"] .image-transform-handle {
+    display: block;
+}
+
+.image-scale-slider {
+    width: 80%;
+    max-width: 100px;
+    height: 6px;
+    margin-top: 4px;
+    display: none; /* Hide slider in view mode */
+    accent-color: #ff3b30;
+    cursor: pointer;
+}
+
+.image-rotation-slider {
+    accent-color: #6f42c1;
+}
+
+.drawing-mode .image-scale-slider {
+    display: block;
+}
+
+/* Resize handle styled as a wobbly red dot in the bottom-right corner */
+.resize-handle {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    width: 14px;
+    height: 14px;
+    background-color: #ff3b30;
+    border: 2px solid #111111;
+    border-radius: 50%;
+    cursor: se-resize;
+    display: none; /* Hidden in view mode */
+    z-index: 25;
+}
+
+/* Drawing mode adjustments for draggable & resizable elements */
+.header.drawing-mode .sandbox-element,
+.workspace.drawing-mode .sandbox-element {
+    cursor: move;
+    outline: 2px dashed rgba(255, 59, 48, 0.45);
+    outline-offset: 4px;
+}
+
+.header.drawing-mode .sandbox-element .resize-handle,
+.workspace.drawing-mode .sandbox-element .resize-handle {
+    display: block; /* Visible during drawing mode */
+}
+
+/* Text placing mode helper outline and cursor pointer */
+.sandbox-element[data-placing-text="true"] {
+    cursor: cell !important;
+    outline: 2.5px dashed #ff3b30 !important;
+    outline-offset: 4px;
+}
+
+/* Hide resize handle and element control panel when editing text */
+.sandbox-element[data-editing-text="true"] .resize-handle,
+.sandbox-element[data-editing-text="true"] .element-controls {
+    display: none !important;
+}
+
+/* Ensure the floating toolbar is not clipped when editing */
+.sandbox-element[data-editing-text="true"] {
+    overflow: visible !important;
+}
+
+/* Active tab style for card toolbar mode selection */
+.el-ctrl-btn.active-tab {
+    background-color: #fffde6 !important;
+    border-color: #ff3b30 !important;
+    color: #ff3b30 !important;
+    transform: scale(1.05);
+}
+
+/* Cursor pointer updates */
+a, button, .logo, .nav-link, .contact-btn, .color-btn {
+    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M10,14 L10,6 C10,4.5 11.5,3 13,3 C14.5,3 16,4.5 16,6 L16,14 L18,14 C19.5,14 20,15 20,16.5 C20,18 19.5,19 18,19 L16,19 L16,21 C16,22.5 15,24 13.5,24 C12,24 10,22.5 10,21 L10,14' fill='%23ffffff' stroke='%23111111' stroke-width='2' stroke-linejoin='round'/></svg>") 13 3, pointer;
+}
