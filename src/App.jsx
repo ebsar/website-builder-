@@ -964,6 +964,7 @@ function App() {
         onPenSize={penSize => setUiState(prev => ({ ...prev, penSize: Number(penSize) }))}
         onEraser={() => setUiState(prev => ({ ...prev, erasing: !prev.erasing }))}
         onClearDrawing={() => commitState(prev => ({ ...prev, drawingData: '' }))}
+        onDelete={deleteSelected}
       />
       <DrawOverlay
         enabled={state.drawMode}
@@ -1157,127 +1158,203 @@ function TopToolbar({
   onPenColor,
   onPenSize,
   onEraser,
-  onClearDrawing
+  onClearDrawing,
+  onDelete
 }) {
+  const [time, setTime] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const date = new Date();
+      const options = { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true };
+      setTime(date.toLocaleDateString('en-US', options).replace(',', ''));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className={`draw-controls react-builder-top editor-top-${websiteStyle}`}>
+    <div className="react-builder-top apple-menubar">
       <div className="editor-appbar">
-        <div className="editor-brand">
-          <span className="editor-brand-mark">GB</span>
-          <span>
-            <strong>Boost Build</strong>
-            <small>{websiteStyle === 'modern' ? 'Modern workspace' : 'Drawn workspace'}</small>
-          </span>
-        </div>
-        <nav className="editor-menubar" aria-label="Editor tools">
+        {/* Left Side: Apple Menu and Main Menus */}
+        <div className="menubar-left">
+          {/* Apple Logo Dropdown */}
+          <details className="editor-menu apple-logo-menu">
+            <summary className="menu-apple-icon"></summary>
+            <div className="editor-menu-panel">
+              <button onClick={() => alert("Boost Build Website Creator\nVersion 1.0.0\nA visual website builder with freehand drawing and React state framework.")}>
+                About Boost Build
+              </button>
+              <hr className="menu-separator" />
+              <button className={showGrid ? "menu-checked" : ""} onClick={onToggleGrid}>
+                {showGrid ? "✓ Show Grid" : "Show Grid"}
+              </button>
+              <button className={snapToGrid ? "menu-checked" : ""} onClick={onToggleSnap}>
+                {snapToGrid ? "✓ Snap to Grid" : "Snap to Grid"}
+              </button>
+              <hr className="menu-separator" />
+              <button className="danger-text" onClick={() => { if (confirm("Are you sure you want to reset the design?")) onClear(); }}>
+                Reset Builder...
+              </button>
+            </div>
+          </details>
+
+          {/* File Menu */}
+          <details className="editor-menu">
+            <summary>File</summary>
+            <div className="editor-menu-panel">
+              <label className="menu-btn-label">
+                Import JSON...
+                <input type="file" accept="application/json,.json" onChange={onImportJson} style={{ display: 'none' }} />
+              </label>
+              <button onClick={onExportJson}>
+                Export JSON <span className="menu-shortcut">⌘S</span>
+              </button>
+              <hr className="menu-separator" />
+              <button onClick={onExport}>
+                Export HTML <span className="menu-shortcut">⌘E</span>
+              </button>
+            </div>
+          </details>
+
+          {/* Edit Menu */}
           <details className="editor-menu">
             <summary>Edit</summary>
             <div className="editor-menu-panel">
-              <span className="menu-section-title">Shortcuts</span>
-              <div className="shortcut-list">
-                <span>Ctrl Z</span><span>Undo</span>
-                <span>Ctrl Y</span><span>Redo</span>
-                <span>Ctrl C/V</span><span>Copy/Paste</span>
-                <span>Delete</span><span>Remove selected</span>
-                <span>Arrows</span><span>Nudge</span>
-              </div>
-              <span className="menu-section-title">Actions</span>
-              <button className="builder-btn" disabled={!canUndo} onClick={onUndo}>Undo</button>
-              <button className="builder-btn" disabled={!canRedo} onClick={onRedo}>Redo</button>
-              <button className="builder-btn" disabled={!selected} onClick={onCopy}>Copy</button>
-              <button className="builder-btn" disabled={!canPaste} onClick={onPaste}>Paste</button>
-              <button className={`builder-btn ${snapToGrid ? 'active-tool' : ''}`} onClick={onToggleSnap}>Snap</button>
-              <button className={`builder-btn ${showGrid ? 'active-tool' : ''}`} onClick={onToggleGrid}>Grid</button>
-              <label className="grid-size-control">
-                Size
-                <input type="number" min="4" max="80" value={gridSize || 10} onChange={event => onGridSize(event.target.value)} />
-              </label>
-              <span className="menu-section-title">Draw</span>
-              <button className={`builder-btn ${drawMode ? 'active-tool' : ''}`} onClick={onToggleDraw}>Draw Mode</button>
-              <button className={`builder-btn ${erasing ? 'active-tool' : ''}`} onClick={onEraser}>Eraser</button>
-              <label className="grid-size-control">
-                Pen
-                <input type="color" value={penColor || '#2563eb'} onChange={event => onPenColor(event.target.value)} />
-              </label>
-              <label className="grid-size-control">
-                Size
-                <input type="number" min="1" max="40" value={penSize || 4} onChange={event => onPenSize(event.target.value)} />
-              </label>
-              <button className="builder-btn danger-btn" onClick={onClearDrawing}>Clear Drawing</button>
-            </div>
-          </details>
-          <details className="editor-menu">
-            <summary>Sections</summary>
-            <div className="editor-menu-panel menu-grid">
-              <button className="builder-btn primary" disabled={navbarEnabled} onClick={onAddNavbar}>
-                {navbarEnabled ? 'Navbar Added' : 'Add Navbar'}
+              <button disabled={!canUndo} onClick={onUndo}>
+                Undo <span className="menu-shortcut">⌘Z</span>
               </button>
-              <button className="builder-btn primary" onClick={() => onTemplate('hero')}>Hero</button>
-              <button className="builder-btn" onClick={() => onTemplate('content')}>Content</button>
-              <button className="builder-btn" onClick={() => onTemplate('gallery')}>Gallery</button>
-              <button className="builder-btn" onClick={() => onTemplate('cta')}>CTA</button>
-              <button className="builder-btn" onClick={() => onTemplate('pricing')}>Pricing</button>
-              <button className="builder-btn" onClick={() => onTemplate('testimonial')}>Reviews</button>
-              <button className="builder-btn" onClick={() => onTemplate('blank')}>Blank</button>
+              <button disabled={!canRedo} onClick={onRedo}>
+                Redo <span className="menu-shortcut">⌘Y</span>
+              </button>
+              <hr className="menu-separator" />
+              <button disabled={!selected} onClick={onCopy}>
+                Copy <span className="menu-shortcut">⌘C</span>
+              </button>
+              <button disabled={!canPaste} onClick={onPaste}>
+                Paste <span className="menu-shortcut">⌘V</span>
+              </button>
+              <button disabled={!selected} onClick={onDuplicate}>
+                Duplicate <span className="menu-shortcut">⌘D</span>
+              </button>
+              <button disabled={!selected} className="danger-text" onClick={onDelete}>
+                Delete <span className="menu-shortcut">⌫</span>
+              </button>
             </div>
           </details>
+
+          {/* Insert Menu */}
+          <details className="editor-menu">
+            <summary>Insert</summary>
+            <div className="editor-menu-panel">
+              <button disabled={navbarEnabled} onClick={onAddNavbar}>
+                Navigation Bar {navbarEnabled && "✓"}
+              </button>
+              <hr className="menu-separator" />
+              <button onClick={() => onTemplate('hero')}>Hero Section</button>
+              <button onClick={() => onTemplate('content')}>Feature Section</button>
+              <button onClick={() => onTemplate('gallery')}>Gallery Section</button>
+              <button onClick={() => onTemplate('cta')}>Call to Action (CTA)</button>
+              <button onClick={() => onTemplate('pricing')}>Pricing Section</button>
+              <button onClick={() => onTemplate('testimonial')}>Reviews Section</button>
+              <button onClick={() => onTemplate('blank')}>Blank Section</button>
+            </div>
+          </details>
+
+          {/* View Menu */}
           <details className="editor-menu">
             <summary>View</summary>
             <div className="editor-menu-panel">
-              <span className="menu-section-title">Theme</span>
-              <button className={`builder-btn ${websiteStyle === 'modern' ? 'active-tool' : ''}`} onClick={() => onWebsiteStyle('modern')}>Modern</button>
-              <button className={`builder-btn ${websiteStyle === 'drawn' ? 'active-tool' : ''}`} onClick={() => onWebsiteStyle('drawn')}>Drawn</button>
-              <span className="menu-section-title">Canvas</span>
-              {['desktop', 'tablet', 'mobile'].map(item => (
-                <button
-                  key={item}
-                  className={`builder-btn ${device === item ? 'active-tool' : ''}`}
-                  onClick={() => onDevice(item)}
-                >
-                  {item[0].toUpperCase() + item.slice(1)}
-                </button>
-              ))}
+              <button onClick={onPreview}>
+                {mode === 'edit' ? "✓ Edit Mode" : "Edit Mode"}
+              </button>
+              <button onClick={onPreview}>
+                {mode === 'preview' ? "✓ Preview Mode" : "Preview Mode"}
+              </button>
+              <hr className="menu-separator" />
+              <button onClick={() => onWebsiteStyle('drawn')}>
+                {websiteStyle === 'drawn' ? "✓ Drawn Theme (Sketch)" : "Drawn Theme (Sketch)"}
+              </button>
+              <button onClick={() => onWebsiteStyle('modern')}>
+                {websiteStyle === 'modern' ? "✓ Modern Theme (Clean)" : "Modern Theme (Clean)"}
+              </button>
+              <hr className="menu-separator" />
+              <button onClick={() => onDevice('desktop')}>
+                {device === 'desktop' ? "✓ Desktop Layout" : "Desktop Layout"}
+              </button>
+              <button onClick={() => onDevice('tablet')}>
+                {device === 'tablet' ? "✓ Tablet Layout" : "Tablet Layout"}
+              </button>
+              <button onClick={() => onDevice('mobile')}>
+                {device === 'mobile' ? "✓ Mobile Layout" : "Mobile Layout"}
+              </button>
             </div>
           </details>
+
+          {/* Selected Element Menu */}
           {selected && (
             <details className="editor-menu">
               <summary>Selected</summary>
-              <div className="editor-menu-panel menu-grid">
-                <button className="builder-btn" onClick={onDuplicate}>Duplicate</button>
-                <button className="builder-btn" onClick={() => onLayer(1)}>Layer +</button>
-                <button className="builder-btn" onClick={() => onLayer(-1)}>Layer -</button>
-                <button className="builder-btn" onClick={() => onAlign('left')}>Left</button>
-                <button className="builder-btn" onClick={() => onAlign('center')}>Center</button>
-                <button className="builder-btn" onClick={() => onAlign('right')}>Right</button>
-                <button className="builder-btn" onClick={() => onNudge(0, -10)}>Up</button>
-                <button className="builder-btn" onClick={() => onNudge(0, 10)}>Down</button>
-                <button className="builder-btn" onClick={onLock}>{selected.locked ? 'Unlock' : 'Lock'}</button>
-                <button className="builder-btn" onClick={() => onPreset('cleanCard')}>Card</button>
-                <button className="builder-btn" onClick={() => onPreset('glass')}>Glass</button>
-                <button className="builder-btn" onClick={() => onPreset('glowButton')}>Glow</button>
-                <button className="builder-btn" onClick={() => onPreset('softImage')}>Image</button>
-                <button className="builder-btn" onClick={() => onPreset('ghost')}>No Border</button>
+              <div className="editor-menu-panel">
+                <button onClick={() => onLayer(1)}>Bring Forward</button>
+                <button onClick={() => onLayer(-1)}>Send Backward</button>
+                <hr className="menu-separator" />
+                <button onClick={() => onAlign('left')}>Align Left</button>
+                <button onClick={() => onAlign('center')}>Align Center</button>
+                <button onClick={() => onAlign('right')}>Align Right</button>
+                <hr className="menu-separator" />
+                <button onClick={onLock}>
+                  {selected.locked ? "✓ Locked" : "Lock Position"}
+                </button>
+                <hr className="menu-separator" />
+                <button onClick={() => onPreset('cleanCard')}>Preset: Clean Card</button>
+                <button onClick={() => onPreset('glass')}>Preset: Glassmorphism</button>
+                <button onClick={() => onPreset('glowButton')}>Preset: Glow Button</button>
+                <button onClick={() => onPreset('softImage')}>Preset: Soft Image</button>
+                <button onClick={() => onPreset('ghost')}>Preset: Ghost (Transparent)</button>
               </div>
             </details>
           )}
+
+          {/* Draw Sub-Menu */}
           <details className="editor-menu">
-            <summary>Publish</summary>
+            <summary>Draw</summary>
             <div className="editor-menu-panel">
-              <button className="builder-btn" onClick={onPreview}>{mode === 'edit' ? 'Preview' : 'Edit'}</button>
-              <button className="builder-btn" onClick={onExport}>Export HTML</button>
-              <button className="builder-btn" onClick={onExportJson}>Export JSON</button>
-              <label className="builder-btn file-builder-btn">
-                Import JSON
-                <input type="file" accept="application/json,.json" onChange={onImportJson} />
-              </label>
-              <button className="builder-btn danger-btn" onClick={onClear}>Reset</button>
+              <button onClick={onToggleDraw}>
+                {drawMode ? "✓ Active (Sketching)" : "Start Sketching"}
+              </button>
+              <button onClick={onEraser}>
+                {erasing ? "✓ Eraser Active" : "Eraser"}
+              </button>
+              <hr className="menu-separator" />
+              <div className="menu-input-row">
+                <span>Color</span>
+                <input type="color" value={penColor || '#2563eb'} onChange={event => onPenColor(event.target.value)} />
+              </div>
+              <div className="menu-input-row">
+                <span>Size</span>
+                <input type="number" min="1" max="40" value={penSize || 4} onChange={event => onPenSize(event.target.value)} />
+              </div>
+              <hr className="menu-separator" />
+              <button className="danger-text" onClick={onClearDrawing}>Clear Sketches</button>
             </div>
           </details>
-        </nav>
-        <div className="editor-status">
-          <span>{device}</span>
-          <span>{snapToGrid ? 'Snap on' : 'Snap off'}</span>
-          <span>{showGrid ? `Grid ${gridSize}` : 'Grid hidden'}</span>
+        </div>
+
+        {/* Right Side: Status and Clock */}
+        <div className="menubar-right">
+          <div className="select-device-icons">
+            <button className={device === 'desktop' ? 'active-icon' : ''} onClick={() => onDevice('desktop')} title="Desktop view">🖥️</button>
+            <button className={device === 'tablet' ? 'active-icon' : ''} onClick={() => onDevice('tablet')} title="Tablet view">📟</button>
+            <button className={device === 'mobile' ? 'active-icon' : ''} onClick={() => onDevice('mobile')} title="Mobile view">📱</button>
+          </div>
+          <span className="apple-status-separator">|</span>
+          <button className={`apple-preview-toggle ${mode === 'preview' ? 'preview-active' : ''}`} onClick={onPreview}>
+            {mode === 'preview' ? '▶ Preview' : '✎ Edit'}
+          </button>
+          <span className="apple-status-separator">|</span>
+          <span className="apple-clock">{time}</span>
         </div>
       </div>
     </div>
