@@ -703,6 +703,19 @@ function App() {
     }
 
     function handleShortcut(event) {
+      if (event.key === 'Escape') {
+        document.querySelectorAll('details[open]').forEach(menu => {
+          menu.open = false;
+        });
+        document.activeElement?.blur?.();
+        setUiState(prev => ({
+          ...prev,
+          selectedId: null,
+          drawMode: false
+        }));
+        return;
+      }
+
       if (isTypingTarget(event.target)) return;
 
       const key = event.key.toLowerCase();
