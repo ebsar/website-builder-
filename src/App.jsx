@@ -389,6 +389,9 @@ function defaultState() {
     mode: 'edit',
     websiteStyle: 'drawn',
     device: 'desktop',
+    bodyBgColor: '#f8fafc',
+    bodyBgImage: '',
+    bodyBgRepeat: 'no-repeat',
     navbar: freshNavbar({
       enabled: true,
       brand: 'Boost Build',
@@ -465,6 +468,9 @@ function App() {
       if (parsed.navbar && typeof parsed.navbar.enabled === 'undefined') {
         parsed.navbar = { ...parsed.navbar, enabled: false };
       }
+      if (!parsed.bodyBgColor) parsed.bodyBgColor = '#f8fafc';
+      if (parsed.bodyBgImage === undefined) parsed.bodyBgImage = '';
+      if (!parsed.bodyBgRepeat) parsed.bodyBgRepeat = 'no-repeat';
       return parsed;
     } catch {
       return defaultState();
@@ -555,7 +561,7 @@ function App() {
     commitState(prev => ({ ...prev, mode: 'edit', sections: [...prev.sections, templateSections[kind]()] }));
   }
 
-  function addElement(sectionId, type) {
+  function addElement(sectionId, type, overrides = {}) {
     const next = element(type, {
       left: type === 'text' ? 115 : 140,
       top: type === 'text' ? 100 : 140,
@@ -575,7 +581,8 @@ function App() {
           height: '100%',
           fontSize: 32,
           lineHeight: 1.18
-        } : {})]
+        } : {})],
+      ...overrides
     });
     commitState(prev => ({
       ...prev,
@@ -735,6 +742,15 @@ function App() {
         }
       };
     });
+  }
+
+  function uploadBodyBgImage(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => commitState(prev => ({ ...prev, bodyBgImage: reader.result }));
+    reader.readAsDataURL(file);
+    event.target.value = '';
   }
 
   function duplicateSection(sectionId) {
@@ -983,6 +999,13 @@ function App() {
         onEraser={() => setUiState(prev => ({ ...prev, erasing: !prev.erasing }))}
         onClearDrawing={() => commitState(prev => ({ ...prev, drawingData: '' }))}
         onDelete={deleteSelected}
+        bodyBgColor={state.bodyBgColor || '#f8fafc'}
+        bodyBgImage={state.bodyBgImage || ''}
+        bodyBgRepeat={state.bodyBgRepeat || 'no-repeat'}
+        onBodyBgColor={color => commitState(prev => ({ ...prev, bodyBgColor: color }))}
+        onBodyBgImageUpload={uploadBodyBgImage}
+        onClearBodyBgImage={() => commitState(prev => ({ ...prev, bodyBgImage: '' }))}
+        onBodyBgRepeat={repeat => commitState(prev => ({ ...prev, bodyBgRepeat: repeat }))}
       />
       <DrawOverlay
         enabled={state.drawMode}
@@ -996,7 +1019,18 @@ function App() {
         {state.mode === 'edit' ? 'Save Design' : 'Edit Design'}
       </button>
 
-      <div className={`site-style-shell site-style-${state.websiteStyle || 'drawn'} device-${state.device || 'desktop'}`}>
+      <div 
+        className={`site-style-shell site-style-${state.websiteStyle || 'drawn'} device-${state.device || 'desktop'}`}
+        style={{
+          backgroundColor: state.bodyBgColor || undefined,
+          backgroundImage: state.bodyBgImage ? `url(${state.bodyBgImage})` : undefined,
+          backgroundRepeat: state.bodyBgRepeat === 'cover' ? 'no-repeat' : state.bodyBgRepeat || 'no-repeat',
+          backgroundSize: state.bodyBgRepeat === 'cover' ? 'cover' : undefined,
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          minHeight: '100vh'
+        }}
+      >
         <HeaderNav
           editing={state.mode === 'edit'}
           navbar={state.navbar || defaultState().navbar}
@@ -1177,7 +1211,14 @@ function TopToolbar({
   onPenSize,
   onEraser,
   onClearDrawing,
-  onDelete
+  onDelete,
+  bodyBgColor,
+  bodyBgImage,
+  bodyBgRepeat,
+  onBodyBgColor,
+  onBodyBgImageUpload,
+  onClearBodyBgImage,
+  onBodyBgRepeat
 }) {
   const [time, setTime] = useState('');
 
@@ -1307,6 +1348,63 @@ function TopToolbar({
               <button onClick={() => onDevice('mobile')}>
                 {device === 'mobile' ? "✓ Mobile Layout" : "Mobile Layout"}
               </button>
+            </div>
+          </details>
+
+          {/* Page Menu */}
+          <details className="editor-menu">
+            <summary>Page</summary>
+            <div className="editor-menu-panel">
+              <div className="menu-input-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '2px 8px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 'bold' }}>BG Color</span>
+                <input
+                  type="color"
+                  value={bodyBgColor || '#f8fafc'}
+                  onChange={event => onBodyBgColor(event.target.value)}
+                  style={{ width: '40px', height: '24px', padding: 0, border: 'none', cursor: 'pointer' }}
+                />
+              </div>
+              <hr className="menu-separator" />
+              <label className="menu-btn-label" style={{ display: 'block', padding: '6px 12px', fontSize: '0.84rem', fontWeight: '500', cursor: 'pointer', textAlign: 'left' }}>
+                Upload BG Image...
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={onBodyBgImageUpload}
+                  style={{ display: 'none' }}
+                />
+              </label>
+              {bodyBgImage && (
+                <button
+                  className="danger-text"
+                  onClick={onClearBodyBgImage}
+                  style={{ width: '100%', textAlign: 'left', padding: '6px 12px' }}
+                >
+                  Remove BG Image
+                </button>
+              )}
+              <hr className="menu-separator" />
+              <div className="menu-input-row" style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '6px', alignItems: 'center', padding: '2px 8px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 'bold' }}>BG Repeat</span>
+                <select
+                  value={bodyBgRepeat || 'no-repeat'}
+                  onChange={event => onBodyBgRepeat(event.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '24px',
+                    fontSize: '0.78rem',
+                    fontWeight: 'bold',
+                    padding: '0 4px',
+                    borderRadius: '4px',
+                    border: '1px solid rgba(0,0,0,0.15)',
+                    background: '#fff'
+                  }}
+                >
+                  <option value="no-repeat">No Repeat</option>
+                  <option value="repeat">Repeat</option>
+                  <option value="cover">Scale/Cover</option>
+                </select>
+              </div>
             </div>
           </details>
 
@@ -1553,86 +1651,247 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
         </>
       )}
       {editing && (
-        <details className="navbar-editor-tools compact-editor-menu">
-          <summary>Navbar</summary>
-          <div className="compact-editor-panel">
-            <label>
-              Brand
-              <input value={navbar.brand || ''} onChange={event => onUpdate({ brand: event.target.value })} />
-            </label>
-            {navbar.cta && (
+        <div className="container-tools compact-section-tools navbar-editor-tools">
+          <span className="section-toolbar-title">Navbar</span>
+          
+          <details className="compact-editor-menu">
+            <summary>Add</summary>
+            <div className="compact-editor-panel component-library" style={{ minWidth: '150px' }}>
+              <button className="tool-btn component-btn" onClick={onAddLink}>Link</button>
+              {!navbar.cta && (
+                <button className="tool-btn component-btn" onClick={onAddButton}>Button</button>
+              )}
+              {!(navbar.brand || navbar.logoImage) && (
+                <button className="tool-btn component-btn" onClick={() => onUpdate({ brand: 'Brand' })}>Logo</button>
+              )}
+            </div>
+          </details>
+
+          <details className="compact-editor-menu">
+            <summary>Settings</summary>
+            <div className="compact-editor-panel section-settings-panel">
               <label>
-                Button text
-                <input value={navbar.cta || ''} onChange={event => onUpdate({ cta: event.target.value })} />
+                Brand Text
+                <input
+                  value={navbar.brand || ''}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdate({ brand: event.target.value })}
+                />
               </label>
-            )}
-            <label>
-              Logo
-              <select value={navbar.logoType || 'text'} onChange={event => onUpdate({ logoType: event.target.value })}>
-                <option value="text">Text</option>
-                <option value="image">Image</option>
-              </select>
-            </label>
-            <label>
-              Logo image
-              <input type="file" accept="image/*" onChange={uploadLogo} />
-            </label>
-            <label>
-              H
-              <input type="number" min="64" max="220" value={navbar.height || 108} onChange={event => onUpdate({ height: Number(event.target.value) })} />
-            </label>
-            <label>
-              W
-              <input type="number" min="220" max="1800" value={navbar.width || 1180} onChange={event => onUpdate({ width: Number(event.target.value) })} />
-            </label>
-            <label>
-              X
-              <input type="number" min="-2000" max="2000" value={navbar.offsetX || 0} onChange={event => onUpdate({ offsetX: Number(event.target.value) })} />
-            </label>
-            <label>
-              Y
-              <input type="number" min="-2000" max="2000" value={navbar.offsetY || 0} onChange={event => onUpdate({ offsetY: Number(event.target.value) })} />
-            </label>
-            <label>
-              BG
-              <input type="color" value={colorInputValue(navbar.backgroundColor, '#ffffff')} onChange={event => onUpdate({ backgroundColor: event.target.value })} />
-            </label>
-            <label className="navbar-check">
-              Sticky
-              <input type="checkbox" checked={!!navbar.sticky} onChange={event => onUpdate({ sticky: event.target.checked })} />
-            </label>
-            <button className="tool-btn" onClick={onAddLink}>Add Link</button>
-            <button className="tool-btn" onClick={onAddButton}>Add Button</button>
-            {navbar.cta && <button className="tool-btn btn-delete-section" onClick={() => onUpdate({ cta: '' })}>Remove Button</button>}
-            <button className="tool-btn" onMouseDown={startNavbarMove}>Hold Move</button>
-            <button className="tool-btn" onClick={() => onUpdate({ offsetX: 0, offsetY: 0 })}>Reset Move</button>
-            <button className="tool-btn" onMouseDown={startNavbarRotate}>Hold Rotate</button>
-            <button className="tool-btn" onClick={() => onUpdate({ rotation: 0 })}>Reset Rotate</button>
-            <button className="tool-btn btn-delete-section" onClick={() => onUpdate({ enabled: false })}>Remove Navbar</button>
+              <label>
+                Logo Type
+                <select
+                  value={navbar.logoType || 'text'}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdate({ logoType: event.target.value })}
+                >
+                  <option value="text">Text</option>
+                  <option value="image">Image</option>
+                </select>
+              </label>
+              <label>
+                Logo image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={uploadLogo}
+                />
+              </label>
+              {navbar.cta !== undefined && navbar.cta !== null && navbar.cta !== '' && (
+                <label>
+                  Button text
+                  <input
+                    value={navbar.cta || ''}
+                    onMouseDown={event => event.stopPropagation()}
+                    onChange={event => onUpdate({ cta: event.target.value })}
+                  />
+                </label>
+              )}
+              <label>
+                Height (px)
+                <input
+                  type="number"
+                  min="44"
+                  max="300"
+                  value={navbar.height || 108}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdate({ height: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Width (px)
+                <input
+                  type="number"
+                  min="220"
+                  max="1800"
+                  value={navbar.width || 1180}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdate({ width: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Move X
+                <input
+                  type="number"
+                  min="-2000"
+                  max="2000"
+                  value={navbar.offsetX || 0}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdate({ offsetX: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Move Y
+                <input
+                  type="number"
+                  min="-2000"
+                  max="2000"
+                  value={navbar.offsetY || 0}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdate({ offsetY: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Background
+                <input
+                  type="color"
+                  value={colorInputValue(navbar.backgroundColor, '#ffffff')}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdate({ backgroundColor: event.target.value })}
+                />
+              </label>
+              <label className="navbar-check">
+                Sticky
+                <input
+                  type="checkbox"
+                  checked={!!navbar.sticky}
+                  onMouseDown={event => event.stopPropagation()}
+                  onChange={event => onUpdate({ sticky: event.target.checked })}
+                />
+              </label>
+              <div className="section-action-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', marginTop: '6px' }}>
+                <button className="tool-btn" onMouseDown={startNavbarMove}>Move</button>
+                <button className="tool-btn" onMouseDown={startNavbarRotate}>Rotate</button>
+                <button
+                  className="tool-btn btn-delete-section"
+                  onClick={() => onUpdate({ enabled: false })}
+                  style={{ gridColumn: 'span 2' }}
+                >
+                  Delete Navbar
+                </button>
+              </div>
+            </div>
+          </details>
+
+          {/* Height range slider direct control */}
+          <div className="range-slider-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.7)', padding: '3px 8px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>Height</span>
+            <input
+              type="range"
+              min="44"
+              max="300"
+              value={navbar.height || 108}
+              onMouseDown={event => event.stopPropagation()}
+              onChange={event => onUpdate({ height: Number(event.target.value) })}
+              style={{ width: '80px', height: '14px', cursor: 'pointer', accentColor: '#2563eb' }}
+            />
+            <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#1e293b' }}>{navbar.height || 108}px</span>
           </div>
-        </details>
+
+          <button className="tool-btn btn-delete-section" onClick={() => onUpdate({ enabled: false })}>Remove Navbar</button>
+        </div>
       )}
       {editing && <span className="section-move-handle navbar-move-handle" title="Hold and drag to move navbar" onMouseDown={startNavbarMove} />}
       {editing && <span className="section-rotate-handle navbar-rotate-handle" title="Hold and drag to rotate navbar" onMouseDown={startNavbarRotate} />}
       {editing && <span className="section-resize-handle navbar-resize-handle" title="Resize navbar" onMouseDown={startNavbarResize} />}
       <nav className="navbar" id="main-navbar">
         {(navbar.logoImage || navbar.brand) && (
-          <a
-            href="#"
+          <div
             className="logo nav-editable-item"
             id="nav-logo"
-            style={{ left: navbar.logoX || 72, top: navbar.logoY || 36 }}
+            style={{ left: navbar.logoX || 72, top: navbar.logoY || 36, display: 'flex', alignItems: 'center' }}
             onMouseDown={event => startNavbarDrag(event, 'logoX', 'logoY')}
           >
             {navbar.logoType === 'image' && navbar.logoImage ? (
-              <img className="navbar-logo-image" src={navbar.logoImage} alt={navbar.brand || 'Logo'} />
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <img className="navbar-logo-image" src={navbar.logoImage} alt={navbar.brand || 'Logo'} style={{ pointerEvents: 'none' }} />
+                {editing && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onUpdate({ logoImage: '' }); }}
+                    style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      right: '-6px',
+                      border: 'none',
+                      background: '#ef4444',
+                      color: '#fff',
+                      borderRadius: '50%',
+                      width: '16px',
+                      height: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '10px',
+                      cursor: 'pointer',
+                      padding: 0,
+                      lineHeight: 1,
+                      zIndex: 10
+                    }}
+                    aria-label="Remove logo image"
+                  >
+                    x
+                  </button>
+                )}
+              </div>
             ) : (
               <>
                 <span className="fresh-logo-mark">{(navbar.brand || 'L').trim().slice(0, 1).toUpperCase()}</span>
-                <span className="logo-text">{navbar.brand}</span>
+                {editing ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <input
+                      className="logo-text-input"
+                      value={navbar.brand}
+                      onChange={event => onUpdate({ brand: event.target.value })}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'inherit',
+                        font: 'inherit',
+                        fontWeight: 'bold',
+                        width: '80px',
+                        padding: 0
+                      }}
+                      aria-label="Brand text"
+                    />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onUpdate({ brand: '', logoImage: '' }); }}
+                      style={{
+                        border: 'none',
+                        background: '#ef4444',
+                        color: '#fff',
+                        borderRadius: '50%',
+                        width: '16px',
+                        height: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        cursor: 'pointer',
+                        padding: 0,
+                        lineHeight: 1
+                      }}
+                      aria-label="Remove logo"
+                    >
+                      x
+                    </button>
+                  </div>
+                ) : (
+                  <span className="logo-text">{navbar.brand}</span>
+                )}
               </>
             )}
-          </a>
+          </div>
         )}
         {(navbar.links || []).map((link, index) => {
           const position = (navbar.linkPositions || [])[index] || { x: 360 + index * 86, y: 26 };
@@ -1660,7 +1919,50 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
             style={{ left: navbar.ctaX || 970, top: navbar.ctaY || 36 }}
             onMouseDown={event => startNavbarDrag(event, 'ctaX', 'ctaY')}
           >
-            <a href="#" className="contact-btn"><span>{navbar.cta}</span></a>
+            {editing ? (
+              <div className="contact-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'move' }}>
+                <input
+                  className="contact-btn-input"
+                  value={navbar.cta}
+                  onChange={event => onUpdate({ cta: event.target.value })}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'inherit',
+                    font: 'inherit',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    width: '85px',
+                    padding: 0,
+                    cursor: 'text'
+                  }}
+                  aria-label="Navbar button text"
+                />
+                <button
+                  onClick={(e) => { e.stopPropagation(); onUpdate({ cta: '' }); }}
+                  style={{
+                    border: 'none',
+                    background: '#ef4444',
+                    color: '#fff',
+                    borderRadius: '50%',
+                    width: '16px',
+                    height: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    cursor: 'pointer',
+                    padding: 0,
+                    lineHeight: 1
+                  }}
+                  aria-label="Remove button"
+                >
+                  x
+                </button>
+              </div>
+            ) : (
+              <a href="#" className="contact-btn"><span>{navbar.cta}</span></a>
+            )}
           </div>
         )}
       </nav>
@@ -1714,6 +2016,8 @@ function EditorSection({
   gridSize
 }) {
   const sectionRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   function uploadSectionImage(event) {
     const file = event.target.files?.[0];
@@ -1823,6 +2127,38 @@ function EditorSection({
 
   return (
     <main ref={sectionRef} className={`workspace ${editing ? 'drawing-mode' : ''}`} style={sectionStyle} onMouseDown={() => editing && onSelect(null)}>
+      {editing && (
+        <>
+          <input
+            type="file"
+            ref={imageInputRef}
+            accept="image/*,.gif"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => onAddElement(section.id, 'image', { imageSrc: reader.result });
+              reader.readAsDataURL(file);
+              e.target.value = '';
+            }}
+          />
+          <input
+            type="file"
+            ref={videoInputRef}
+            accept="video/*"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => onAddElement(section.id, 'video', { imageSrc: reader.result });
+              reader.readAsDataURL(file);
+              e.target.value = '';
+            }}
+          />
+        </>
+      )}
       <div className="section-label">{section.name}</div>
       {editing && (
         <div className="container-tools compact-section-tools">
@@ -1838,7 +2174,15 @@ function EditorSection({
                       <button
                         key={item.type}
                         className="tool-btn component-btn"
-                        onClick={() => onAddElement(section.id, item.type)}
+                        onClick={() => {
+                          if (item.type === 'image') {
+                            imageInputRef.current?.click();
+                          } else if (item.type === 'video') {
+                            videoInputRef.current?.click();
+                          } else {
+                            onAddElement(section.id, item.type);
+                          }
+                        }}
                       >
                         {item.label}
                       </button>

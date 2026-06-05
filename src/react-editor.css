@@ -354,10 +354,16 @@ select,
 }
 
 .navbar-editor-tools {
-  position: fixed;
-  left: 18px;
-  top: 50px;
-  z-index: 20000;
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  left: auto;
+  z-index: 9200;
+}
+
+.site-style-modern .navbar-editor-tools {
+  top: 18px;
+  right: 18px;
 }
 
 .compact-editor-menu {
@@ -2382,3 +2388,218 @@ select,
   padding-top: 28px !important;
 }
 
+/* Inline Editable Elements inside Navbar */
+.logo-text-input,
+.contact-btn-input {
+  outline: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+.logo-text-input:focus,
+.contact-btn-input:focus {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border-bottom: 2px dashed #2563eb !important;
+}
+
+/* Clean & Small Toolbar Overrides matching the macOS top bar */
+.container-tools,
+.workspace .container-tools,
+.navbar-editor-tools {
+  filter: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08) !important;
+  z-index: 9200 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  height: auto !important;
+  width: auto !important;
+  left: auto !important;
+  right: 18px !important;
+  top: 15px !important;
+}
+
+/* Section Title inside Toolbar */
+.section-toolbar-title {
+  color: #0f172a !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 850 !important;
+  text-transform: uppercase !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.12) !important;
+  padding-right: 8px !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Tool Buttons inside the Toolbar */
+.container-tools .tool-btn,
+.workspace .tool-btn,
+.navbar-editor-tools .tool-btn {
+  height: 24px !important;
+  min-height: 24px !important;
+  line-height: 1 !important;
+  padding: 0 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  color: #334155 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.container-tools .tool-btn:hover,
+.workspace .tool-btn:hover,
+.navbar-editor-tools .tool-btn:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: #2563eb !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+  transform: none !important;
+}
+
+/* Dropdown menus (summary / details) inside the Toolbar */
+.compact-editor-menu summary {
+  min-height: 24px !important;
+  height: 24px !important;
+  padding: 0 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.compact-editor-menu summary:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: #2563eb !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+}
+
+.compact-editor-menu summary::after {
+  border-top-width: 4px !important;
+  border-left-width: 3px !important;
+  border-right-width: 3px !important;
+}
+
+/* The panel popup when dropdown is opened */
+.compact-editor-panel {
+  padding: 8px !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.15) !important;
+  gap: 6px !important;
+}
+
+.compact-editor-panel label {
+  gap: 2px !important;
+  font-size: 0.64rem !important;
+  font-weight: 850 !important;
+}
+
+.compact-editor-panel input,
+.compact-editor-panel select {
+  min-height: 26px !important;
+  height: 26px !important;
+  font-size: 0.76rem !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  padding: 0 6px !important;
+}
+
+/* Height range slider direct control wrapper inside the Toolbar */
+.range-slider-wrapper {
+  background: rgba(255, 255, 255, 0.5) !important;
+  padding: 2px 6px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  height: 24px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.range-slider-wrapper span {
+  font-size: 0.64rem !important;
+  font-weight: 800 !important;
+}
+
+.range-slider-wrapper input[type="range"] {
+  height: 10px !important;
+  width: 70px !important;
+  margin: 0 !important;
+}
+
+/* Danger items inside Toolbar */
+.tool-btn.btn-delete-section,
+.container-tools .btn-delete-section {
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+.tool-btn.btn-delete-section:hover,
+.container-tools .btn-delete-section:hover {
+  background: #fef2f2 !important;
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Card Mini Toolbar overrides for elements (square, image, text, etc.) */
+.card-mini-toolbar {
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  padding: 2px !important;
+  gap: 2px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12) !important;
+  top: -28px !important;
+  min-height: 22px !important;
+  height: auto !important;
+  align-items: center !important;
+}
+
+.card-mini-toolbar button,
+.card-mini-toolbar .card-mini-file {
+  min-height: 18px !important;
+  height: 18px !important;
+  padding: 0 6px !important;
+  font-size: 0.62rem !important;
+  font-weight: 700 !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: #475569 !important;
+}
+
+.card-mini-toolbar button:hover,
+.card-mini-toolbar .card-mini-file:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: #2563eb !important;
+}
+
+.card-mini-label {
+  font-size: 0.54rem !important;
+  font-weight: 850 !important;
+  color: #94a3b8 !important;
+  padding: 0 4px !important;
+}
