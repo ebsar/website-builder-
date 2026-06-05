@@ -141,6 +141,7 @@ function element(type, overrides = {}) {
     imageSrc: '',
     isButton: type === 'button',
     link: '',
+    linkMode: 'url',
     textLayers: type === 'image'
       ? []
       : [textLayer(type === 'button' ? 'Button text' : type === 'text' ? 'Edit this text' : 'Box', type === 'text' ? {
@@ -346,6 +347,7 @@ function defaultState() {
     websiteStyle: 'drawn',
     device: 'desktop',
     navbar: {
+      enabled: false,
       brand: 'Boost Build',
       logoType: 'text',
       logoImage: '',
@@ -385,6 +387,9 @@ function App() {
       const parsed = JSON.parse(saved);
       if (parsed.navbar?.brand === 'Boost Bite') {
         parsed.navbar = { ...parsed.navbar, brand: 'Boost Build' };
+      }
+      if (parsed.navbar && typeof parsed.navbar.enabled === 'undefined') {
+        parsed.navbar = { ...parsed.navbar, enabled: false };
       }
       return parsed;
     } catch {
@@ -459,17 +464,9 @@ function App() {
       ...prev,
       sections: prev.sections.map(sec => sec.id !== sectionId ? sec : {
         ...sec,
-        elements: sec.elements.map(el => {
-          if (el.id !== elementId) return el;
-          const nextTextLayers = el.textLayers.map(txt => txt.id === textId ? { ...txt, ...patch } : txt);
-          const editedText = nextTextLayers.find(txt => txt.id === textId)?.text || '';
-          const shouldGrowTextCard = el.type === 'text' && typeof patch.text === 'string';
-          const estimatedWidth = Math.min(960, Math.max(Number(el.width) || 420, editedText.length * ((nextTextLayers[0]?.fontSize || 32) * 0.58) + 32));
-          return {
-            ...el,
-            width: shouldGrowTextCard ? estimatedWidth : el.width,
-            textLayers: nextTextLayers
-          };
+        elements: sec.elements.map(el => el.id !== elementId ? el : {
+          ...el,
+          textLayers: el.textLayers.map(txt => txt.id === textId ? { ...txt, ...patch } : txt)
         })
       })
     }));
@@ -847,6 +844,8 @@ function App() {
         showGrid={state.showGrid}
         gridSize={state.gridSize}
         onTemplate={addSection}
+        navbarEnabled={!!state.navbar?.enabled}
+        onAddNavbar={() => updateNavbar({ enabled: true })}
         onPreview={() => setUiState(prev => ({ ...prev, mode: prev.mode === 'edit' ? 'preview' : 'edit', selectedId: null }))}
         onExport={exportHtml}
         onExportJson={exportJson}
@@ -1038,6 +1037,8 @@ function TopToolbar({
   showGrid,
   gridSize,
   onTemplate,
+  navbarEnabled,
+  onAddNavbar,
   onPreview,
   onExport,
   onExportJson,
@@ -1118,6 +1119,9 @@ function TopToolbar({
           <details className="editor-menu">
             <summary>Sections</summary>
             <div className="editor-menu-panel menu-grid">
+              <button className="builder-btn primary" disabled={navbarEnabled} onClick={onAddNavbar}>
+                {navbarEnabled ? 'Navbar Added' : 'Add Navbar'}
+              </button>
               <button className="builder-btn primary" onClick={() => onTemplate('hero')}>Hero</button>
               <button className="builder-btn" onClick={() => onTemplate('content')}>Content</button>
               <button className="builder-btn" onClick={() => onTemplate('gallery')}>Gallery</button>
@@ -1193,6 +1197,8 @@ function TopToolbar({
 function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemoveLink }) {
   const headerRef = useRef(null);
   const [guide, setGuide] = useState(null);
+  if (!navbar?.enabled) return null;
+
   const navStyle = {
     minHeight: `${navbar.height || 108}px`,
     backgroundColor: navbar.backgroundColor || undefined,
@@ -1295,6 +1301,7 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onRemov
               <input type="checkbox" checked={!!navbar.sticky} onChange={event => onUpdate({ sticky: event.target.checked })} />
             </label>
             <button className="tool-btn" onClick={onAddLink}>Add Link</button>
+            <button className="tool-btn btn-delete-section" onClick={() => onUpdate({ enabled: false })}>Remove Navbar</button>
           </div>
         </details>
       )}
@@ -1523,8 +1530,78 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
   const ref = useRef(null);
   const snap = value => snapToGrid ? Math.round(value / gridSize) * gridSize : value;
 
+  function applyQuickLink(mode) {
+    const current = item.link || (mode === 'route' ? '/' : 'https://');
+    const label = mode === 'route' ? 'React route path' : 'Website URL';
+    const nextLink = window.prompt(`${label} for this ${item.type}`, current);
+    if (nextLink === null) return;
+    onUpdate(sectionId, item.id, {
+      isButton: true,
+      linkMode: mode,
+      link: nextLink.trim()
+    });
+  }
+
+  function clearQuickLink() {
+    onUpdate(sectionId, item.id, {
+      isButton: false,
+      link: '',
+      linkMode: 'url'
+    });
+  }
+
+  function uploadInlineImage(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onUpdate(sectionId, item.id, {
+      type: 'image',
+      imageSrc: reader.result,
+      textLayers: [],
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
+      borderWidth: 0,
+      shadow: 'none'
+    });
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  }
+
+  function openElementLink() {
+    if (!item.isButton || !item.link) return;
+    const target = item.link.trim();
+    if (!target) return;
+    if (item.linkMode === 'route' || target.startsWith('/')) {
+      window.history.pushState({}, '', target);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      return;
+    }
+    window.open(target, '_blank', 'noopener,noreferrer');
+  }
+
+  function fitTextToCard(textEl, layer) {
+    if (item.type !== 'text' || !textEl) return;
+    const baseSize = layer.baseFontSize || layer.fontSize || 32;
+    let nextSize = baseSize;
+    textEl.style.fontSize = `${nextSize}px`;
+    const maxSteps = 40;
+    let steps = 0;
+    while ((textEl.scrollWidth > textEl.clientWidth || textEl.scrollHeight > textEl.clientHeight) && nextSize > 10 && steps < maxSteps) {
+      nextSize -= 1;
+      textEl.style.fontSize = `${nextSize}px`;
+      steps += 1;
+    }
+  }
+
+  useEffect(() => {
+    if (item.type !== 'text') return;
+    ref.current?.querySelectorAll('.element-text-content').forEach((textEl, index) => {
+      fitTextToCard(textEl, item.textLayers[index] || {});
+    });
+  }, [item.type, item.width, item.height, item.textLayers]);
+
   function startDrag(event) {
-    if (!editing || item.locked || event.target.closest('button,input,select,textarea,.resize-handle,.rotate-handle,.element-text-content')) return;
+    if (!editing || item.locked || event.target.closest('button,input,select,textarea,label,.resize-handle,.rotate-handle,.element-text-content')) return;
     event.preventDefault();
     event.stopPropagation();
     onSelect(item.id);
@@ -1621,7 +1698,7 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
       onMouseDown={startDrag}
       onClick={event => {
         event.stopPropagation();
-        if (item.isButton && !editing && item.link) window.open(item.link, '_blank');
+        if (!editing) openElementLink();
       }}
     >
       {item.type === 'image' && item.imageSrc && <img className="element-img" src={item.imageSrc} alt="" style={{ objectFit: item.objectFit || 'cover', objectPosition: item.objectPosition || 'center' }} />}
@@ -1648,16 +1725,8 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
             animationDuration: `${txt.textAnimationDuration || 1.2}s`,
             animationDelay: `${txt.textAnimationDelay || 0}s`
           }}
-          onInput={event => {
-            if (item.type !== 'text') return;
-            const text = event.currentTarget.textContent || '';
-            const fontSize = txt.fontSize || 32;
-            const nextWidth = Math.min(960, Math.max(item.width || 420, text.length * (fontSize * 0.58) + 32));
-            if (nextWidth > item.width) {
-              onUpdate(sectionId, item.id, { width: nextWidth });
-            }
-          }}
           onBlur={event => onTextUpdate(sectionId, item.id, txt.id, { text: event.currentTarget.textContent })}
+          onInput={event => fitTextToCard(event.currentTarget, txt)}
         >
           {txt.text}
         </div>
@@ -1668,6 +1737,17 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
             <span className="card-mini-label">{item.type}</span>
             <button type="button" title="Move this card">Move</button>
             <button type="button" title="Rotate using the round handle">Rotate</button>
+            <button type="button" title="Add or edit a normal URL" onClick={() => applyQuickLink('url')}>Link</button>
+            <button type="button" title="Add or edit a React route path" onClick={() => applyQuickLink('route')}>Route</button>
+            {item.isButton && item.link && (
+              <button type="button" title="Remove link or route" onClick={clearQuickLink}>Unlink</button>
+            )}
+            {item.type === 'image' && (
+              <label className="card-mini-file" title="Replace image or GIF">
+                Image
+                <input type="file" accept="image/*,.gif" onChange={uploadInlineImage} />
+              </label>
+            )}
             <button
               type="button"
               className="danger"
@@ -1810,7 +1890,17 @@ function Inspector({ selected, onUpdate, onTextUpdate, onPreset, onDelete }) {
       </label>
       <label><input type="checkbox" checked={!!selected.locked} onChange={e => onUpdate({ locked: e.target.checked })} /> Lock position</label>
       <label><input type="checkbox" checked={!!selected.isButton} onChange={e => onUpdate({ isButton: e.target.checked, type: e.target.checked ? 'button' : selected.type })} /> Button link</label>
-      {selected.isButton && <label>URL <input value={selected.link || ''} onChange={e => onUpdate({ link: e.target.value })} placeholder="https://example.com" /></label>}
+      {selected.isButton && (
+        <>
+          <label>Link type
+            <select value={selected.linkMode || 'url'} onChange={e => onUpdate({ linkMode: e.target.value })}>
+              <option value="url">URL</option>
+              <option value="route">React route</option>
+            </select>
+          </label>
+          <label>{(selected.linkMode || 'url') === 'route' ? 'Route' : 'URL'} <input value={selected.link || ''} onChange={e => onUpdate({ link: e.target.value })} placeholder={(selected.linkMode || 'url') === 'route' ? '/about' : 'https://example.com'} /></label>
+        </>
+      )}
       <label>Image/GIF <input type="file" accept="image/*,.gif" onChange={uploadImage} /></label>
       <label>Image/GIF URL <input value={selected.imageSrc?.startsWith('data:') ? '' : selected.imageSrc || ''} onChange={e => onUpdate({ type: 'image', imageSrc: e.target.value, textLayers: [] })} placeholder="https://..." /></label>
       <div className="inspector-grid">
@@ -1833,7 +1923,7 @@ function Inspector({ selected, onUpdate, onTextUpdate, onPreset, onDelete }) {
       {firstText && (
         <>
           <div className="inspector-title">Text</div>
-          <label>Size <input type="range" min="10" max="80" value={firstText.fontSize} onChange={e => onTextUpdate(firstText.id, { fontSize: Number(e.target.value) })} /></label>
+          <label>Size <input type="range" min="10" max="80" value={firstText.baseFontSize || firstText.fontSize} onChange={e => onTextUpdate(firstText.id, { fontSize: Number(e.target.value), baseFontSize: Number(e.target.value) })} /></label>
           <label>Weight
             <select value={firstText.fontWeight} onChange={e => onTextUpdate(firstText.id, { fontWeight: e.target.value })}>
               <option value="300">Light</option>
