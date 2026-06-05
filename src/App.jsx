@@ -115,9 +115,9 @@ function element(type, overrides = {}) {
     hoverEffect: 'none',
     opacity: 1,
     zIndex: 1,
-    backgroundColor: type === 'text' || type === 'image' ? 'transparent' : '#ffffff',
-    borderColor: type === 'text' || type === 'image' ? 'transparent' : '#111111',
-    borderWidth: type === 'text' || type === 'image' ? 0 : 2,
+    backgroundColor: type === 'text' || type === 'image' || type === 'spacer' ? 'transparent' : '#ffffff',
+    borderColor: 'transparent',
+    borderWidth: 0,
     borderStyle: 'solid',
     radius: 0,
     padding: 0,
@@ -131,7 +131,7 @@ function element(type, overrides = {}) {
     invert: 0,
     sepia: 0,
     dropShadow: 0,
-    shadow: type === 'text' || type === 'image' ? 'none' : 'sketch',
+    shadow: 'none',
     mixBlendMode: 'normal',
     clipShape: 'none',
     objectFit: 'cover',
@@ -169,10 +169,10 @@ function section(name, elements = []) {
     offsetX: 0,
     offsetY: 0,
     rotation: 0,
-    radius: 24,
-    borderWidth: 1,
-    borderColor: '#ffffff',
-    shadow: 'xl',
+    radius: 0,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    shadow: 'none',
     opacity: 1,
     blur: 0,
     backdropBlur: 18,
@@ -253,7 +253,7 @@ function historySnapshot(state) {
 
 const stylePresets = {
   cleanCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
     borderColor: '#111111',
     borderWidth: 2,
     borderStyle: 'solid',
@@ -367,6 +367,7 @@ function freshNavbar(overrides = {}) {
     logoX: 42,
     logoY: 22,
     links: [],
+    linkPositions: [],
     linksX: 360,
     linksY: 26,
     cta: '',
@@ -533,8 +534,10 @@ function App() {
       width: type === 'text' ? 420 : type === 'button' ? 190 : type === 'image' ? 260 : type === 'divider' ? 420 : type === 'spacer' ? 360 : type === 'input' ? 260 : type === 'video' ? 360 : 220,
       height: type === 'text' ? 120 : type === 'button' ? 62 : type === 'image' ? 170 : type === 'divider' ? 8 : type === 'spacer' ? 40 : type === 'badge' ? 42 : type === 'input' ? 54 : type === 'video' ? 210 : 130,
       radius: type === 'circle' ? 999 : type === 'badge' ? 999 : type === 'input' ? 10 : 0,
-      borderWidth: type === 'divider' ? 0 : type === 'spacer' ? 0 : 2,
-      backgroundColor: type === 'divider' ? '#111111' : type === 'spacer' ? 'transparent' : type === 'badge' ? '#eff6ff' : type === 'input' ? '#ffffff' : undefined,
+      borderWidth: 0,
+      borderColor: 'transparent',
+      shadow: 'none',
+      backgroundColor: type === 'divider' ? '#111111' : type === 'spacer' ? 'transparent' : type === 'badge' ? '#ffffff' : type === 'input' ? '#ffffff' : undefined,
       textLayers: type === 'divider' || type === 'spacer' || type === 'image'
         ? []
         : [textLayer(type === 'badge' ? 'Badge' : type === 'input' ? 'Email address' : type === 'video' ? 'Video / Embed' : type === 'button' ? 'Button text' : type === 'text' ? 'Edit this text' : 'Box', type === 'text' ? {
@@ -676,7 +679,12 @@ function App() {
   function addNavbarLink() {
     commitState(prev => {
       const navbar = prev.navbar || defaultState().navbar;
-      return { ...prev, navbar: { ...navbar, links: [...(navbar.links || []), 'Link'] } };
+      const links = [...(navbar.links || []), 'Link'];
+      const linkPositions = [
+        ...(navbar.linkPositions || []),
+        { x: 360 + (navbar.links || []).length * 86, y: 26 }
+      ];
+      return { ...prev, navbar: { ...navbar, links, linkPositions } };
     });
   }
 
@@ -690,7 +698,14 @@ function App() {
   function removeNavbarLink(index) {
     commitState(prev => {
       const navbar = prev.navbar || defaultState().navbar;
-      return { ...prev, navbar: { ...navbar, links: (navbar.links || []).filter((_, i) => i !== index) } };
+      return {
+        ...prev,
+        navbar: {
+          ...navbar,
+          links: (navbar.links || []).filter((_, i) => i !== index),
+          linkPositions: (navbar.linkPositions || []).filter((_, i) => i !== index)
+        }
+      };
     });
   }
 
@@ -1269,8 +1284,8 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
     backgroundColor: navbar.backgroundColor || undefined,
     position: navbar.sticky ? 'sticky' : 'relative',
     top: navbar.sticky ? 54 : undefined,
-    zIndex: navbar.sticky ? 1200 : undefined,
-    transform: `rotate(${navbar.rotation || 0}deg)`,
+    zIndex: editing ? 8800 : navbar.sticky ? 1200 : undefined,
+    transform: navbar.rotation ? `rotate(${navbar.rotation}deg)` : undefined,
     transformOrigin: 'center'
   };
 
@@ -1315,6 +1330,42 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
       window.removeEventListener('mouseup', done);
     }
 
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', done);
+  }
+
+  function startNavbarLinkDrag(event, index) {
+    if (!editing) return;
+    if (event.target.closest('input, button, select, label')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = headerRef.current.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const positions = [...(navbar.linkPositions || [])];
+    const current = positions[index] || { x: 360 + index * 86, y: 26 };
+    function move(e) {
+      const nextX = Math.max(0, Math.min(rect.width - 60, current.x + e.clientX - startX));
+      const nextY = Math.max(0, Math.min(rect.height - 30, current.y + e.clientY - startY));
+      const snapX = Math.abs(nextX - rect.width / 2) < 8 ? rect.width / 2 : nextX;
+      const snapY = Math.abs(nextY - rect.height / 2) < 8 ? rect.height / 2 : nextY;
+      const nextPositions = [...(navbar.linkPositions || [])];
+      nextPositions[index] = { x: Math.round(snapX), y: Math.round(snapY) };
+      onUpdate({ linkPositions: nextPositions });
+      setGuide({
+        vertical: Math.abs(snapX - rect.width / 2) < 8,
+        horizontal: Math.abs(snapY - rect.height / 2) < 8,
+        top: nextY < 8,
+        bottom: Math.abs(nextY - (rect.height - 30)) < 8,
+        left: nextX < 8,
+        right: Math.abs(nextX - (rect.width - 60)) < 8
+      });
+    }
+    function done() {
+      setGuide(null);
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', done);
+    }
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', done);
   }
@@ -1382,7 +1433,7 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
             </label>
             <label>
               BG
-              <input type="color" value={colorInputValue(navbar.backgroundColor, '#cfe6fb')} onChange={event => onUpdate({ backgroundColor: event.target.value })} />
+              <input type="color" value={colorInputValue(navbar.backgroundColor, '#ffffff')} onChange={event => onUpdate({ backgroundColor: event.target.value })} />
             </label>
             <label className="navbar-check">
               Sticky
@@ -1417,26 +1468,26 @@ function HeaderNav({ editing, navbar, onUpdate, onLinkUpdate, onAddLink, onAddBu
             )}
           </a>
         )}
-        {(navbar.links || []).length > 0 && (
-          <div
-            className="nav-menu nav-editable-item"
-            style={{ left: navbar.linksX || 390, top: navbar.linksY || 42 }}
-            onMouseDown={event => startNavbarDrag(event, 'linksX', 'linksY')}
-          >
-            {(navbar.links || []).map((link, index) => (
-              <span className="nav-link nav-link-editable" key={`${link}_${index}`}>
-                {editing ? (
-                  <>
-                    <input value={link} onChange={event => onLinkUpdate(index, event.target.value)} aria-label={`Navbar link ${index + 1}`} />
-                    <button onClick={() => onRemoveLink(index)} aria-label={`Remove ${link}`}>x</button>
-                  </>
-                ) : (
-                  <span>{link}</span>
-                )}
-              </span>
-            ))}
-          </div>
-        )}
+        {(navbar.links || []).map((link, index) => {
+          const position = (navbar.linkPositions || [])[index] || { x: 360 + index * 86, y: 26 };
+          return (
+            <span
+              className="nav-link nav-link-editable nav-editable-item"
+              key={`${link}_${index}`}
+              style={{ left: position.x, top: position.y }}
+              onMouseDown={event => startNavbarLinkDrag(event, index)}
+            >
+              {editing ? (
+                <>
+                  <input value={link} onChange={event => onLinkUpdate(index, event.target.value)} aria-label={`Navbar link ${index + 1}`} />
+                  <button onClick={() => onRemoveLink(index)} aria-label={`Remove ${link}`}>x</button>
+                </>
+              ) : (
+                <span>{link}</span>
+              )}
+            </span>
+          );
+        })}
         {navbar.cta && (
           <div
             className="nav-actions nav-editable-item"
@@ -1914,7 +1965,7 @@ function EditorSection({
               </select>
               <div className="section-action-group">
                 <button className="tool-btn" onClick={() => onUpdateSection(section.id, { widthMode: 'full', radius: 0, maxWidth: 1800 })}>Full</button>
-                <button className="tool-btn" onClick={() => onUpdateSection(section.id, { widthMode: 'contained', radius: 24, maxWidth: 1180, shadow: 'xl', backdropBlur: 18 })}>Card</button>
+                <button className="tool-btn" onClick={() => onUpdateSection(section.id, { widthMode: 'contained', radius: 24, maxWidth: 1180, backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#ffffff', shadow: 'xl', backdropBlur: 18 })}>Card</button>
                 <button className="tool-btn" onMouseDown={startSectionMove}>Hold Move</button>
                 <button className="tool-btn" onClick={() => onUpdateSection(section.id, { offsetX: 0, offsetY: 0 })}>Reset Move</button>
                 <button className="tool-btn" onMouseDown={startSectionRotate}>Hold Rotate</button>
