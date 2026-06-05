@@ -99,8 +99,8 @@ function element(type, overrides = {}) {
     type,
     left: 120,
     top: 90,
-    width: type === 'text' ? 300 : 180,
-    height: type === 'text' ? 80 : 140,
+    width: type === 'text' ? 420 : 180,
+    height: type === 'text' ? 120 : 140,
     rotation: 0,
     rotateX: 0,
     rotateY: 0,
@@ -141,7 +141,16 @@ function element(type, overrides = {}) {
     imageSrc: '',
     isButton: type === 'button',
     link: '',
-    textLayers: type === 'image' ? [] : [textLayer(type === 'button' ? 'Button text' : type === 'text' ? 'Edit this text' : 'Box')],
+    textLayers: type === 'image'
+      ? []
+      : [textLayer(type === 'button' ? 'Button text' : type === 'text' ? 'Edit this text' : 'Box', type === 'text' ? {
+        left: 0,
+        top: 0,
+        width: '100%',
+        height: '100%',
+        fontSize: 32,
+        lineHeight: 1.18
+      } : {})],
     ...overrides
   };
 }
@@ -450,9 +459,17 @@ function App() {
       ...prev,
       sections: prev.sections.map(sec => sec.id !== sectionId ? sec : {
         ...sec,
-        elements: sec.elements.map(el => el.id !== elementId ? el : {
-          ...el,
-          textLayers: el.textLayers.map(txt => txt.id === textId ? { ...txt, ...patch } : txt)
+        elements: sec.elements.map(el => {
+          if (el.id !== elementId) return el;
+          const nextTextLayers = el.textLayers.map(txt => txt.id === textId ? { ...txt, ...patch } : txt);
+          const editedText = nextTextLayers.find(txt => txt.id === textId)?.text || '';
+          const shouldGrowTextCard = el.type === 'text' && typeof patch.text === 'string';
+          const estimatedWidth = Math.min(960, Math.max(Number(el.width) || 420, editedText.length * ((nextTextLayers[0]?.fontSize || 32) * 0.58) + 32));
+          return {
+            ...el,
+            width: shouldGrowTextCard ? estimatedWidth : el.width,
+            textLayers: nextTextLayers
+          };
         })
       })
     }));
@@ -466,14 +483,21 @@ function App() {
     const next = element(type, {
       left: type === 'text' ? 115 : 140,
       top: type === 'text' ? 100 : 140,
-      width: type === 'button' ? 190 : type === 'image' ? 260 : type === 'divider' ? 420 : type === 'spacer' ? 360 : type === 'input' ? 260 : type === 'video' ? 360 : 220,
-      height: type === 'button' ? 62 : type === 'image' ? 170 : type === 'divider' ? 8 : type === 'spacer' ? 40 : type === 'badge' ? 42 : type === 'input' ? 54 : type === 'video' ? 210 : 130,
+      width: type === 'text' ? 420 : type === 'button' ? 190 : type === 'image' ? 260 : type === 'divider' ? 420 : type === 'spacer' ? 360 : type === 'input' ? 260 : type === 'video' ? 360 : 220,
+      height: type === 'text' ? 120 : type === 'button' ? 62 : type === 'image' ? 170 : type === 'divider' ? 8 : type === 'spacer' ? 40 : type === 'badge' ? 42 : type === 'input' ? 54 : type === 'video' ? 210 : 130,
       radius: type === 'circle' ? 999 : type === 'badge' ? 999 : type === 'input' ? 10 : 0,
       borderWidth: type === 'divider' ? 0 : type === 'spacer' ? 0 : 2,
       backgroundColor: type === 'divider' ? '#111111' : type === 'spacer' ? 'transparent' : type === 'badge' ? '#eff6ff' : type === 'input' ? '#ffffff' : undefined,
       textLayers: type === 'divider' || type === 'spacer' || type === 'image'
         ? []
-        : [textLayer(type === 'badge' ? 'Badge' : type === 'input' ? 'Email address' : type === 'video' ? 'Video / Embed' : type === 'button' ? 'Button text' : type === 'text' ? 'Edit this text' : 'Box')]
+        : [textLayer(type === 'badge' ? 'Badge' : type === 'input' ? 'Email address' : type === 'video' ? 'Video / Embed' : type === 'button' ? 'Button text' : type === 'text' ? 'Edit this text' : 'Box', type === 'text' ? {
+          left: 0,
+          top: 0,
+          width: '100%',
+          height: '100%',
+          fontSize: 32,
+          lineHeight: 1.18
+        } : {})]
     });
     commitState(prev => ({
       ...prev,
@@ -779,6 +803,33 @@ function App() {
 
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
+  }, []);
+
+  useEffect(() => {
+    function closeMenus(except = null) {
+      document.querySelectorAll('details[open]').forEach(menu => {
+        if (menu !== except) menu.open = false;
+      });
+    }
+
+    function handlePointerDown(event) {
+      const openMenu = event.target.closest('details[open]');
+      if (!openMenu) closeMenus();
+    }
+
+    function handleToggle(event) {
+      const menu = event.target;
+      if (menu.tagName === 'DETAILS' && menu.open) {
+        closeMenus(menu);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('toggle', handleToggle, true);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('toggle', handleToggle, true);
+    };
   }, []);
 
   return (
@@ -1597,6 +1648,15 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
             animationDuration: `${txt.textAnimationDuration || 1.2}s`,
             animationDelay: `${txt.textAnimationDelay || 0}s`
           }}
+          onInput={event => {
+            if (item.type !== 'text') return;
+            const text = event.currentTarget.textContent || '';
+            const fontSize = txt.fontSize || 32;
+            const nextWidth = Math.min(960, Math.max(item.width || 420, text.length * (fontSize * 0.58) + 32));
+            if (nextWidth > item.width) {
+              onUpdate(sectionId, item.id, { width: nextWidth });
+            }
+          }}
           onBlur={event => onTextUpdate(sectionId, item.id, txt.id, { text: event.currentTarget.textContent })}
         >
           {txt.text}
@@ -1604,17 +1664,23 @@ function EditableElement({ sectionId, item, editing, selected, onSelect, onUpdat
       ))}
       {editing && selected && !item.locked && (
         <>
-          <button
-            className="element-delete-btn"
-            onMouseDown={event => event.stopPropagation()}
-            onClick={event => {
-              event.preventDefault();
-              event.stopPropagation();
-              onDelete(sectionId, item.id);
-            }}
-          >
-            Delete
-          </button>
+          <div className="card-mini-toolbar" onMouseDown={event => event.stopPropagation()}>
+            <span className="card-mini-label">{item.type}</span>
+            <button type="button" title="Move this card">Move</button>
+            <button type="button" title="Rotate using the round handle">Rotate</button>
+            <button
+              type="button"
+              className="danger"
+              title="Delete this card"
+              onClick={event => {
+                event.preventDefault();
+                event.stopPropagation();
+                onDelete(sectionId, item.id);
+              }}
+            >
+              Delete
+            </button>
+          </div>
           <span className="rotate-handle" onMouseDown={startRotate} />
           <span className="resize-handle" onMouseDown={startResize} />
         </>

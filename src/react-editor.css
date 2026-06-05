@@ -945,6 +945,8 @@ select,
   border-color: transparent;
   background: transparent;
   box-shadow: none;
+  min-width: 180px;
+  min-height: 64px;
 }
 
 .react-element[data-type="button"] {
@@ -987,6 +989,21 @@ select,
   outline: none;
   cursor: text;
   overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: pre-wrap;
+  box-sizing: border-box;
+  padding: 4px;
+}
+
+.react-element[data-type="text"] .element-text-content {
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  padding: 8px;
+  overflow: visible;
+  white-space: pre-wrap;
+  overflow-wrap: normal;
 }
 
 .element-text-content[class*="text-anim-"] {
@@ -1195,22 +1212,61 @@ select,
   100% { background-position: 240% 50%; }
 }
 
-.element-delete-btn {
+.card-mini-toolbar {
   position: absolute;
-  right: -8px;
-  top: -36px;
-  z-index: 80;
-  border: 1px solid rgba(220, 38, 38, 0.28);
+  left: 50%;
+  top: -44px;
+  z-index: 120;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transform: translateX(-50%);
+  min-height: 32px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.64);
   border-radius: 999px;
-  background: rgba(255, 245, 245, 0.86);
-  color: #dc2626;
-  box-shadow: 0 12px 26px rgba(220, 38, 38, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  color: #111827;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   font-family: 'Inter', Arial, sans-serif;
-  font-weight: 700;
-  cursor: pointer;
   pointer-events: auto;
+  white-space: nowrap;
+}
+
+.card-mini-label {
+  padding: 0 8px;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.card-mini-toolbar button {
+  min-height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.82);
+  color: #334155;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer !important;
+}
+
+.card-mini-toolbar button:hover {
+  background: rgba(239, 246, 255, 0.95);
+  color: #2563eb;
+}
+
+.card-mini-toolbar button.danger {
+  color: #dc2626;
+}
+
+.card-mini-toolbar button.danger:hover {
+  background: #fee2e2;
 }
 
 .inspector-delete-btn {
